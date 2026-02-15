@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Demo.Server.NET": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "hotReloadEnabled": false
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

@@ -1,0 +1,1238 @@
+{
+    "openapi":"3.0.2",
+    "info": {
+        "title":"VAST.Network.StreamingServer API",
+        "version":"1.0"
+    },
+    "servers": [
+        {"url":"http://127.0.0.1:8888/api/v1"}
+    ],
+    "components": {
+        "parameters": {
+            "PublishingPath": {
+                "in": "path",
+                "name": "publishing-path",
+                "schema": { 
+                    "type": "string"
+                },
+                "description": "Publishing path",
+                "required": true,
+                "example": "test"
+            },
+            "PublishingPointId": {
+                "in": "path",
+                "name": "publishing-point-id",
+                "schema": { 
+                    "type": "string"
+                },
+                "description": "Publishing point id (GUID)",
+                "required": true,
+                "example": "E090C6BA-1313-4AAA-80E4-6F70308BA3EE"
+            },
+            "AccessTokenMandatory": {
+                "in": "query",
+                "name": "token",
+                "schema": { 
+                    "type": "string"
+                },
+                "description": "Access token received in auth request.",
+                "example": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                "required": true
+            },
+            "AccessTokenOptional": {
+                "in": "query",
+                "name": "token",
+                "schema": { 
+                    "type": "string"
+                },
+                "description": "Access token received in auth request. Must be specified either here or in a request body.",
+                "example": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                "required": false
+            }
+        },
+        "schemas": {
+            "SimpleResponse": {
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "description": "OK if success, error description otherwise",
+                        "type": "string"
+                    }
+                },
+                "example": {
+                    "result": "OK"
+                }
+            },
+            "VideoMixing": {
+                "description": "Output video mixing settings.",
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "Mixing type. Single mixing type means use single source video as output. All mixing type means mix all active source videos into output.",
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "all"
+                        ]
+                    },
+                    "source-index": {
+                        "description": "Mandatory for single mixing type. Specifies active source, 0-based index of sources array. Makes sense for single mixing type only, otherwise should not be specified.",
+                        "type": "integer"
+                    },
+                    "audio-source-image": {
+                        "description": "Index of the source which should be used to display audio-only source in output video. This source should provide only a video track, preferably single image.",
+                        "type": "integer"
+                    },
+                    "layers": {
+                        "description": "Arranges the sources based on layers. Higher layer has higher z order, i.e. overlaps below layers. Makes sense for mixing type 'all' only, otherwise should not be specified.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "sources": {
+                                    "description": "List of source indices which should be shown on this layer. At least one source must be specified. If layout type is manual then only one source must be specified.",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "example": [0, 1, 2]
+                                },
+                                "layout": {
+                                    "description": "Layout type. Manual means user must specify source location in the output video. Auto means server arranges the sources in the output video automatically.",
+                                    "type": "string",
+                                    "enum": [
+                                        "manual",
+                                        "auto"
+                                    ]
+                                },
+                                "stretch": {
+                                    "description": "Source stretch type.<br/>Preserve means stretch image to the outer boundaries while preserving aspect ratio and keeping the whole image visible.<br/>Fill means stretch image to the outer boundaries without preserving aspect ratio, i.e. fill the boundaries completely. The whole image remains visible.<br/>Zoom means stretch and center image to fill the outer boundaries completely while keeping aspect ratio. Not fitting up/down or top/bottom parts could be cut out.",
+                                    "type": "string",
+                                    "enum": [
+                                        "preserve",
+                                        "fill",
+                                        "zoom"
+                                    ]
+                                },
+                                "location": {
+                                    "description": "Location of the source in the output video. Can be specified for 'manual' layout type. If not specified then the location will be equal to output image.",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    },
+                                    "example": [0, 0, 1920, 1080]
+                                },
+                                "opacity": {
+                                    "description": "Opacity of the layer. Must be in 0.0..1.0 range.",
+                                    "type": "number",
+                                    "default": 1.0
+                                },
+                                "fade-in": {
+                                    "description": "Fade in duration in milliseconds. If not specified or has value of 0 means no fade in.",
+                                    "type": "integer",
+                                    "default": 0
+                                },
+                                "fade-out": {
+                                    "description": "Fade out duration in milliseconds. If not specified or has value of 0 means no fade out.",
+                                    "type": "integer",
+                                    "default": 0
+                                }
+                            },
+                            "required": ["sources","layout","stretch"]
+                        },
+                        "example": [
+                            {
+                                "sources": [0],
+                                "layout": "manual",
+                                "stretch": "fill"
+                            },
+                            {
+                                "sources": [1,2,3],
+                                "layout": "auto",
+                                "stretch": "zoom"
+                            },
+                            {
+                                "sources": [6],
+                                "layout": "manual",
+                                "stretch": "fill",
+                                "location": [50,50,295,109],
+                                "opacity": 0.7
+                            }
+                        ]
+                    }
+                },
+                "required": ["type"]
+            },
+            "AudioMixing": {
+                "description": "Output audio mixing settings.",
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "Mixing type. Single mixing type means use single source audio as output. All mixing type means mix all active source audios into output.",
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "all"
+                        ]
+                    },
+                    "source-index": {
+                        "description": "Mandatory for single mixing type. Specifies active source, 0-based index of sources array. Makes sense for single mixing type only, otherwise should not be specified.",
+                        "type": "integer"
+                    }
+                },
+                "required": ["type"]
+            },
+            "Sink": {
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "description": "Sink URI",
+                        "type": "string"
+                    },
+                    "format": {
+                        "description": "Sink format if it is not defined expicitly by URI.",
+                        "type": "string",
+                        "enum": [
+                            "imagefile",
+                            "mediafile"
+                        ]
+                    },
+                    "auto-restore": {
+                        "description": "Whether to re-create sink automatically in case of error",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "expected-duration": {
+                        "description": "Expected recorded file duration, should be in TimeSpan parseable format. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "string",
+                        "example": "0:08:00.000"
+                    },
+                    "write-media-data-last": {
+                        "description": "Whether to write media data box as a last box in MP4 container. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "write-state": {
+                        "description": "Whether to write state into VASTreaming custom box. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "auto-complete-state": {
+                        "description": "Whether to set complete state automatically on file close in VASTreaming custom box. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "write-header-update-interval": {
+                        "description": "Interval between writing of updated header to a file, in frames. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "integer",
+                        "default": 0
+                    },
+                    "minimal-free-disk-space": {
+                        "description": "Minimal free disk space required to continue file writing, in bytes. Makes sense for file sink only, otherwise should not be specified.",
+                        "type": "integer",
+                        "default": 0
+                    }
+                },
+                "required": ["uri"],
+                "example": {
+                    "uri": "rtsp://192.168.0.101/forward"
+                }
+            },
+            "PublishingPoint": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "description": "Access token received in auth request. Must be specified either here or in URL query.",
+                        "type": "string"
+                    },
+                    "path": {
+                        "description": "Publishing path. Output stream will be available via proto://server:port/<publishing_path>.",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "Human readable description of the publishing point.",
+                        "type": "string"
+                    },
+                    "streaming-mode": {
+                        "description": "Streaming mode.",
+                        "type": "string",
+                        "enum": [
+                            "live",
+                            "vod",
+                            "event"
+                        ],
+                        "default": "live"
+                    },
+                    "allowed-protocols": {
+                        "description": "Allow this publishing point to be accessed via specified protocols. Possible values: all, none or comma separated lists of protocols. Supported protocols: rtmp, rtsp, hls, dash, rtc, mjpeg.",
+                        "type": "string",
+                        "default": "all"
+                    },
+                    "expiration-timeout": {
+                        "description": "Timeout in seconds publishing point expires after creation and is disposed on streaming server. 0 means no expiration timeout.",
+                        "type": "integer",
+                        "default": 0
+                    },
+                    "inactivity-timeout": {
+                        "description": "Inactivity timeout in seconds after which publishing point is disposed on streaming server. Inactivity means no connected clients to any of publishing point sinks. 0 means no inactivity timeout.",
+                        "type": "integer",
+                        "default": 0
+                    },
+                    "no-samples-timeout": {
+                        "description": "Timeout in milliseconds after which mixing source decides that source is down and starts producing substitute samples. Makes sense for mixing source only, otherwise should not be specified.",
+                        "type": "integer",
+                        "default": 300
+                    },
+                    "allow-absolute-timestamps": {
+                        "description": "Rely on absolute (NTP) timestamps in mixing source procesing logic. Makes sense for mixing source only, otherwise should not be specified.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "allow-video-processing": {
+                        "description": "Whether to allow video processing such as mixing of multiple video sources into an output.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "loop": {
+                        "description": "Whether publishing point sources should be played in an endless loop. Makes sense for file based sources only.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "user-data": {
+                        "description": "Any user specific data to attach to the publishing point.",
+                        "type": "string"
+                    },
+                    "sources": {
+                        "description": "Publishing point sources. At least one source must be specified.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "uri": {
+                                    "description": "Full source URI for pull source, vast://publishing-point/path for push source or vast://text for text source.",
+                                    "type": "string"
+                                },
+                                "format": {
+                                    "description": "Source format if it is not defined expicitly by URI.",
+                                    "type": "string",
+                                    "enum": [
+                                        "imagefile",
+                                        "mediafile",
+                                        "dash",
+                                        "hls",
+                                        "httpts",
+                                        "httpflv",
+                                        "httpmjpeg"
+                                    ]
+                                },
+                                "content": {
+                                    "description": "Content of the text block. Makes sense for text source only, otherwise should not be specified.",
+                                    "type": "string",
+                                    "example": "Anything you want to display"
+                                },
+                                "title": {
+                                    "description": "Human readable source title.",
+                                    "type": "string",
+                                    "example": "Source Title"
+                                },
+                                "loop": {
+                                    "description": "Whether source should be played in an endless loop. Makes sense for file based source only, otherwise should not be specified.",
+                                    "type": "boolean",
+                                    "default": false
+                                },
+                                "interval-from": {
+                                    "description": "Offset from the beginning of the file to start playback from. Should be in TimeSpan parseable format. Makes sense for file source only, otherwise should not be specified.",
+                                    "type": "string",
+                                    "example": "0:01:30.000"
+                                },
+                                "interval-to": {
+                                    "description": "Offset from the beginning of the file to stop playback at. Should be in TimeSpan parseable format. Makes sense for file source only, otherwise should not be specified.",
+                                    "type": "string",
+                                    "example": "0:03:00.000"
+                                },
+                                "no-input-timeout": {
+                                    "description": "Timeout in seconds after which mixing source fails with error if there are no active inputs producing any samples. Makes sense for mixing source only, otherwise should not be specified. 0 means no timeout.",
+                                    "type": "integer",
+                                    "default": 0
+                                },
+                                "delete-file-on-close": {
+                                    "description": "Whether to delete source file when closing the source. Makes sense for publishing point with file source only.",
+                                    "type": "boolean",
+                                    "default": false
+                                },
+                                "width": {
+                                    "description": "Text block width. Makes sense for text source only, otherwise should not be specified. If not specified then the output video width will be used as a text block width.",
+                                    "type": "integer",
+                                    "example": 1920
+                                },
+                                "height": {
+                                    "description": "Text block height. Makes sense for text source only, otherwise should not be specified. If not specified then the output video width will be used as a text block height.",
+                                    "type": "integer",
+                                    "example": 1080
+                                },
+                                "horizontal-alignment": {
+                                    "description": "Horizontal content alignment within a text block. Makes sense for text source only, otherwise should not be specified.",
+                                    "type": "string",
+                                    "enum": [
+                                        "left",
+                                        "center",
+                                        "right"
+                                    ],
+                                    "default": "center"
+                                },
+                                "vertical-alignment": {
+                                    "description": "Vertical content alignment within a text block. Makes sense for text source only, otherwise should not be specified.",
+                                    "type": "string",
+                                    "enum": [
+                                        "top",
+                                        "center",
+                                        "bottom"
+                                    ],
+                                    "default": "center"
+                                },
+                                "decoration": {
+                                    "description": "Text decoration. Makes sense for text source only, otherwise should not be specified.",
+                                    "type": "object",
+                                    "properties": {
+                                        "font-family": {
+                                            "description": "Font family.",
+                                            "type": "string",
+                                            "default": "Arial"
+                                        },
+                                        "size": {
+                                            "description": "Font size.",
+                                            "type": "number",
+                                            "default": 10.0
+                                        },
+                                        "bold": {
+                                            "description": "Whether the font is bold.",
+                                            "type": "boolean",
+                                            "default": false
+                                        },
+                                        "italic": {
+                                            "description": "Whether the font is italic.",
+                                            "type": "boolean",
+                                            "default": false
+                                        },
+                                        "color": {
+                                            "description": "Font color as a hex string. Accepted formats: #ARGB, #RGB, ARGB, RGB.",
+                                            "type": "string",
+                                            "default": "#FFFFFFFF"
+                                        },
+                                        "outline-color": {
+                                            "description": "Outline color as a hex string. Accepted formats: #ARGB, #RGB, ARGB, RGB.",
+                                            "type": "string",
+                                            "default": "#FF000000"
+                                        },
+                                        "outline-width": {
+                                            "description": "Outline width. If not specified or has value of 0 means no outline.",
+                                            "type": "integer",
+                                            "default": 0
+                                        },
+                                        "background-color": {
+                                            "description": "Background color of the text block as a hex string. Accepted formats: #ARGB, #RGB, ARGB, RGB.",
+                                            "type": "string",
+                                            "default": "#00000000"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": ["uri"]
+                        },
+                        "example": [
+                            {
+                                "uri": "vast://publishing-point/host1"
+                            },
+                            {
+                                "uri": "vast://publishing-point/host2"
+                            }
+                        ]
+                    },
+                    "processing": {
+                        "description": "Should be specified when source processing is necessary. Otherwise source will be dispatched to sinks as is.",
+                        "type": "object",
+                        "properties": {
+                            "video": {
+                                "description": "Video processing settings.",
+                                "type": "object",
+                                "properties": {
+                                    "discard": {
+                                        "description": "If set to true then source video track(s) will be discarded. If set to true then no other elements should be present in 'video' object.",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "transcoding": {
+                                        "description": "Whether to transcode source video. Default value is false, i.e. dispatch source video track(s) to sinks as is. If there are multiple sources then transcoding must be set to true.",
+                                        "type": "boolean",
+                                        "default": false,
+                                        "example": true
+                                    },
+                                    "mixing": {
+                                        "description": "Common mixing settings for all video tracks.",
+                                        "$ref": "#/components/schemas/VideoMixing"
+                                    },
+                                    "tracks": {
+                                        "description": "If not specified then dispatch source video track(s) to sinks as is. If transcoding is true then mandatory.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "index": {
+                                                    "description": "0-based track index. Global for video and audio tracks.",
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "width": {
+                                                    "description": "Output width in pixels.",
+                                                    "type": "integer",
+                                                    "example": 1920
+                                                },
+                                                "height": {
+                                                    "description": "Output height in pixels.",
+                                                    "type": "integer",
+                                                    "example": 1080
+                                                },
+                                                "framerate": {
+                                                    "description": "Output framerate in rational format: numerator/denominator.",
+                                                    "type": "string",
+                                                    "example": "30/1"
+                                                },
+                                                "bitrate": {
+                                                    "description": "Output bitrate in bits per second.",
+                                                    "type": "integer",
+                                                    "example": 4000000
+                                                },
+                                                "codec": {
+                                                    "description": "Output video codec.",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "H264",
+                                                        "H265"
+                                                    ]
+                                                },
+                                                "keyframe-interval": {
+                                                    "description": "Keyframe interval in frames.",
+                                                    "type": "integer",
+                                                    "example": "30"
+                                                },
+                                                "profile": {
+                                                    "description": "Integer codec profile value.",
+                                                    "type": "integer",
+                                                    "example": "66"
+                                                },
+                                                "level": {
+                                                    "description": "Float codec level value multiplied by 10.",
+                                                    "type": "integer",
+                                                    "example": "32"
+                                                },
+                                                "mixing": {
+                                                    "description": "Track specific mixing settings.",
+                                                    "$ref": "#/components/schemas/VideoMixing"
+                                                }
+                                            },
+                                            "required": ["index","width","height","framerate","bitrate","codec","mixing"]
+                                        }
+                                    }
+                                }
+                            },
+                            "audio": {
+                                "description": "Audio processing settings.",
+                                "type": "object",
+                                "properties": {
+                                    "discard": {
+                                        "description": "If set to true then source audio track(s) will be discarded. If set to true then no other elements should be present in 'audio' object.",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "transcoding": {
+                                        "description": "Whether to transcode source audio. Default value is false, i.e. dispatch source audio track(s) to sinks as is. If there are multiple sources then transcoding must be set to true.",
+                                        "type": "boolean",
+                                        "default": false,
+                                        "example": true
+                                    },
+                                    "mixing": {
+                                        "description": "Common mixing settings for all audio tracks.",
+                                        "$ref": "#/components/schemas/AudioMixing"
+                                    },
+                                    "tracks": {
+                                        "description": "If not specified then dispatch source audio track(s) to sinks as is. If transcoding is true then mandatory.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "index": {
+                                                    "description": "0-based track index. Global for video and audio tracks.",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "sample-rate": {
+                                                    "description": "Output sample rate in Hz.",
+                                                    "type": "integer",
+                                                    "example": 44100
+                                                },
+                                                "channels": {
+                                                    "description": "Number of output channels.",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "bitrate": {
+                                                    "description": "Output bitrate in bits per second.",
+                                                    "type": "integer",
+                                                    "example": 128000
+                                                },
+                                                "codec": {
+                                                    "description": "Output audio codec.",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "AAC"
+                                                    ],
+                                                    "example": "AAC"
+                                                },
+                                                "mixing": {
+                                                    "description": "Track specific mixing settings.",
+                                                    "$ref": "#/components/schemas/AudioMixing"
+                                                }
+                                            },
+                                            "required": ["index","sample-rate","channels","bitrate","codec","mixing"]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "sinks": {
+                        "description": "List of sinks to be created after successful publishing point creation.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Sink"
+                        }
+                    }
+                },
+                "required": ["path","sources"]
+            }
+        }
+    },
+    "paths": {
+        "/auth": {
+            "post": {
+                "tags": ["Authentication"],
+                "summary": "Authenticate the user and obtain access token",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "User name",
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "description": "User password",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["name","password"],
+                                "example": {
+                                    "name": "admin",
+                                    "password": "admin"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created access token or error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "OK if success, error description otherwise",
+                                            "type": "string"
+                                        },
+                                        "token": {
+                                            "description": "Created access token. Returned only if operation succeeded.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "example": {
+                                        "result": "OK",
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to parse requested object"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Authentication"],
+                "summary": "Revoke access token",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/publishing-point": {
+            "post": {
+                "tags": ["Publishing Point"],
+                "description": "Create publishing point",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenOptional"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublishingPoint"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Created publishing point id or error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "OK if success, error description otherwise",
+                                            "type": "string"
+                                        },
+                                        "publishing-point-id": {
+                                            "description": "Id of the created publishing point. Returned only if operation succeeded.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "example": {
+                                        "result": "OK",
+                                        "publishing-point-id": "E090C6BA-1313-4AAA-80E4-6F70308BA3EE"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to parse requested object"
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        },
+        "/publishing-point/{publishing-path}": {
+            "get": {
+                "tags": ["Publishing Point"],
+                "description": "Gets status and description of publishing point with specified path.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPath"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Publishing point status and optional description. Publishing point descriptor returned only if it's a publishing point with mixing source.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "'OK' if publishing point is active, 'Not Found' otherwise",
+                                            "type": "string"
+                                        },
+                                        "publishing-point": {
+                                            "$ref": "#/components/schemas/PublishingPoint"
+                                        }
+                                    },
+                                    "example": {
+                                        "result": "Not Found"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "One or more mandatory parameters missed."
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Publishing Point"],
+                "description": "Update parameters of the publishing point with specified path.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPath"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenOptional"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublishingPoint"
+                            },
+                            "examples": {
+                                "Update sources": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "sources": [
+                                            {
+                                                "uri": "vast://publishing-point/host1"
+                                            },
+                                            {
+                                                "uri": "vast://publishing-point/host2"
+                                            },
+                                            {
+                                                "uri": "vast://publishing-point/host3"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "Change active source": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "processing": {
+                                            "video": {
+                                                "tracks": [
+                                                    {
+                                                        "index": 0,
+                                                        "mixing": {
+                                                            "type": "single",
+                                                            "source-index": 1
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "description": "When updating mixing parameters index is mandatory. The full mixing element must be present too including type and parameters mandatory for this mixing type."
+                                }
+                            }
+                        }
+                    },
+                    "description": "Only changed parameters should be specified. Only the following parameters can be changed:<br/>1. root.sources – can change the array itself and any source parameter<br/>2. root.processing.video.tracks[N].mixing – can change any mixing parameter<br/>2. root.processing.audio.tracks[N].mixing – can change any mixing parameter"
+                },
+                "responses": {
+                    "200": {
+                        "description": "Operation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to parse requested object"
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Publishing Point"],
+                "description": "Removes publishing point with specified path.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPath"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "One or more mandatory parameters missed."
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        },
+        "/publishing-point/{publishing-point-id}": {
+            "get": {
+                "tags": ["Publishing Point"],
+                "description": "Gets status and description of publishing point with specified id.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPointId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Publishing point status and optional description. Publishing point descriptor returned only if it's a publishing point with mixing source.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "'OK' if publishing point is active, 'Not Found' otherwise",
+                                            "type": "string"
+                                        },
+                                        "publishing-point": {
+                                            "$ref": "#/components/schemas/PublishingPoint"
+                                        }
+                                    },
+                                    "example": {
+                                        "result": "Not Found"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "One or more mandatory parameters missed."
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Publishing Point"],
+                "description": "Update parameters of the publishing point with specified id. Only changed parameters should be specified.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPointId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PublishingPoint"
+                            },
+                            "examples": {
+                                "Update sources": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "sources": [
+                                            {
+                                                "uri": "vast://publishing-point/host1"
+                                            },
+                                            {
+                                                "uri": "vast://publishing-point/host2"
+                                            },
+                                            {
+                                                "uri": "vast://publishing-point/host3"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "Change active source": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "processing": {
+                                            "video": {
+                                                "tracks": [
+                                                    {
+                                                        "index": 0,
+                                                        "mixing": {
+                                                            "type": "single",
+                                                            "source-index": 1
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "description": "When updating mixing parameters index is mandatory. The full mixing element must be present too including type and parameters mandatory for this mixing type."
+                                }
+                            }
+                        }
+                    },
+                    "description": "Only changed parameters should be specified. Only the following parameters can be changed:<br/>1. root.sources – can change the array itself and any source parameter<br/>2. root.processing.video.tracks[N].mixing – can change any mixing parameter<br/>2. root.processing.audio.tracks[N].mixing – can change any mixing parameter"
+                },
+                "responses": {
+                    "200": {
+                        "description": "Operation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to parse requested object"
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Publishing Point"],
+                "description": "Removes publishing point with specified id.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/PublishingPointId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "One or more mandatory parameters missed."
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        },
+        "/sink": {
+            "post": {
+                "tags": ["Publishing Point"],
+                "description": "Add sink to a publishing point",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenOptional"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "token": {
+                                        "description": "Access token received in auth request. Must be specified either here or in URL query.",
+                                        "type": "string",
+                                        "example": "807665D5-B626-4210-B503-BDF281F5E0B6"
+                                    },
+                                    "path": {
+                                        "description": "Publishing path. Must be specified either path or publishing-point-id.",
+                                        "type": "string",
+                                        "example": "test"
+                                    },
+                                    "publishing-point-id": {
+                                        "description": "Publishing point id. Must be specified either path or publishing-point-id.",
+                                        "type": "string",
+                                        "example": "E090C6BA-1313-4AAA-80E4-6F70308BA3EE"
+                                    },
+                                    "sink": {
+                                        "$ref": "#/components/schemas/Sink"
+                                    }
+                                },
+                                "required": ["sink"]
+                            },
+                            "examples": {
+                                "Create sink by publishing path": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "path": "test",
+                                        "sink": {
+                                            "uri": "rtsp://192.168.0.101/forward"
+                                        }
+                                    }
+                                },
+                                "Create sink by publishing point id": {
+                                    "value": {
+                                        "token": "807665D5-B626-4210-B503-BDF281F5E0B6",
+                                        "publishing-point-id": "E090C6BA-1313-4AAA-80E4-6F70308BA3EE",
+                                        "sink": {
+                                            "uri": "rtsp://192.168.0.101/forward"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Id of created sink or error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "OK if success, error description otherwise",
+                                            "type": "string"
+                                        },
+                                        "sink-id": {
+                                            "description": "Id of created sink. Returned only if operation succeeded.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "example": {
+                                        "result": "OK",
+                                        "sink-id": "E090C6BA-1313-4AAA-80E4-6F70308BA3EE"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Failed to parse requested object"
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        },
+        "/stat": {
+            "get": {
+                "tags": ["Statistics"],
+                "description": "Gets current server statistics",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current server statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "result": {
+                                            "description": "OK if success, error description otherwise",
+                                            "type": "string"
+                                        },
+                                        "stat": {
+                                            "description": "Statistics",
+                                            "type": "object",
+                                            "properties": {
+                                                "connection-count": {
+                                                    "description": "Current total connection count",
+                                                    "type": "integer",
+                                                    "example": 100
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        },
+        "/test-speed": {
+            "get": {
+                "tags": ["Other"],
+                "description": "Test download speed from the server",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Server returns a big chunk of data with content type video/mp4. Returned data must not be played because it’s not a real mp4 file but a garbage data. Client code can use a download time to calculate actual download speed from the server.",
+                        "content": {
+                            "video/mp4": {}
+                        }
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Other"],
+                "description": "Test upload speed to the server. Client should send a big chunk of data in request body. Server replies OK and client can use response reception time to calculate actual upload speed to the server.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/AccessTokenMandatory"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "*/*": {}
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Always OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimpleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Authorization failed"
+                    }
+                }
+            }
+        }
+    }
+}

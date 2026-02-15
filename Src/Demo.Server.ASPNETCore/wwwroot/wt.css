@@ -1,0 +1,185 @@
+.vast-video-container
+{
+    display: grid;
+
+    grid-template-columns: auto;
+    grid-template-rows: 1fr 40px;
+
+    width: fit-content;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-video-seek-bar
+{
+    display: none;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-audio-gain-bar
+{
+    display: none;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-video-buttons
+{
+    display: contents;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-video-buttons > .vast-position-value
+{
+    display: none;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-video-buttons > .vast-audio-headphones-container
+{
+    display: none;
+}
+
+.vast-video-container.vast-playback-not-started > .vast-video-buttons > .vast-play-button
+{
+    display: none;
+    <!--
+    grid-column: 1 / 1;
+    grid-row: 1 / span 2;
+
+    align-self: center;
+    background-color: #1E242C;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 50%;
+    font-size: 3.0rem;
+    height: 30px;
+    justify-self: center;
+    width: 30px;
+    -->
+}
+
+.vast-video-container > canvas
+{
+    grid-column: 1 / 1;
+    grid-row: 1 / span 2;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons
+{
+    align-items: anchor-center;
+    background: #1E242C;
+    color: ghostwhite;
+    display: flex;
+    height: 40px;
+    flex-flow: row;
+    font-family: Arial, Helvetica, sans-serif;
+
+    grid-column: 1 / 1;
+    grid-row: 2;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-video-seek-bar
+{
+    display: inline;
+    flex-grow: 1;
+    height: 8px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 2px;
+    width: 50%;
+
+    background-color: #989898;
+    background-image: linear-gradient(to right, red, red);
+    background-repeat: no-repeat;
+    background-size: 0%;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-audio-gain-bar
+{
+    height: 8px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 2px;
+    width: 10%;
+
+    background-color: #989898;
+    background-image: linear-gradient(to right, red, red);
+    background-repeat: no-repeat;
+    background-size: 0%;
+}
+
+.vast-video-container.vast-playback-started > .vast-video-buttons > .vast-position-value
+{
+    display: none;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-position-value
+{
+    align-content: center;
+    display: inline;
+    margin-top: 4px;
+}
+
+.vast-video-container.vast-playback-started > .vast-video-buttons > .vast-play-button
+{
+    display: none;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-play-button.vast-is-playing
+{
+    align-self: center;
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA8SURBVEhL7c0xCgAwCARBL///s6mSQojlBWGnkgPZCACYRnXoZGaeW9L9fe2dVQcXwjaEbQjbfAsDmG8DeSwIGPBP0DsAAAAASUVORK5CYII=");
+    border: none;
+    display: inline;
+    font-size: 3.0rem;
+    height: 30px;
+    justify-self: center;
+    width: 30px;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-play-button.vast-is-paused
+{
+    align-self: center;
+    border: none;
+    display: inline;
+    font-size: 3.0rem;
+    height: 30px;
+    justify-self: center;
+    width: 30px;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.vast-video-container.vast-playback-started > .vast-video-buttons > .vast-audio-headphones-container
+{
+    display: none;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons > .vast-audio-headphones-container
+{
+    display: flex;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons .vast-audio-headphones
+{
+    align-self: center;
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAKtSURBVEhLxZdJjw5RFIafr+lG0xIbG1Y2JDSJSERiCCLmeVoIKyJ2Nv6HX2BY2LCTICFiChJB6J0Y2pxIDDE2Wvdj4dTnuuob+tOJNzm5VafOed9bdzh1q6LyP1BpQbgT6ADa4n4A6Ae+ZHF10azwBGAKMAeYC0wFxgM/gA9AL3AduAk8At7lBH9BrWdd6mb1hNpnY3xVj6ubIjfnq1q9N54N7Ad2xLB+B64APcAz4HPEjQUmA93AQmAUMAgcAw4CtzPeX8h7ErZS7Une5Ii6Sp1cElvYpMg7lOT1qKtLYkuFl6uPI/GpurHRsGXWpa5Xe4Pjiboij8uTutW7SW9n5glDsOnqnVpcaeC4ZJgeqbNKyIZqM9X7wXk0Hbk0aFUEfFO3l5C0aluDU3VN4S8edqonk551lhC0amPUw8F9Sh1rIjwjHryLxZQn/6ttUN+GRrdaLXvLor0be3W4Uex/Cq1CeEG094HXcT2ceAPci+tFJMLTotr0xv0W4BrwErgB7Ax/I1SAvTFyz4GLwNp49jg+KFPhd+V6HrV4t7pOfR/zUeCjuq9k7nI7EPU6xSt1aXD3qS/SOe6I3owE5sWXJ8U4YEnmy9EOLI5anWIiMD/4B0KrKtwOGG3Hn3lVjMwdGcZEfhlGJxp/CI+ItpL4clRyR4a2JmIo+FOR4vvYTHItNJ1bCA9mbStoJDoQLyeJ8EPgU2yBWkP9L2iLrfkptKoia8NOxUJoBTWPMsF5BlgHrCYRfgncapDcDGrlF9NwM7SGdVgH6wj/hVz4R1gZGi28vlhAZfieO3JhgKvA18w3AJzLfDn6gfO5M87dl3NnXmtR29Vt6tk4Al1Qd6mjS2Jz61T3qJfUB+rpqP0j8th65+rxUd76o9c1AzO0AV1RIr8BH/MAhvALM+z4CYaVMaWgJWv8AAAAAElFTkSuQmCC");
+    border: none;
+    display: inline;
+    font-size: 3.0rem;
+    height: 30px;
+    justify-self: center;
+    width: 30px;
+}
+
+.vast-video-container:hover.vast-playback-started > .vast-video-buttons .vast-audio-headphones-muted
+{
+     color: lightgray;
+     font-weight: 500;
+     height: 30px;
+     position: absolute;
+     text-align: center;
+     visibility: hidden;
+     width: 30px;
+}
+
+.vast-play-icon
+{
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABtSURBVEhL7dKxCoAwDITh4uRDOTj41g4dfLBzMRiOIkKbIHIfdCmEP4WWIiLyWwAqgJXvw+GWu4AL5y7AVSd2Aa417AAWnuvGlQevFpj4YoD5OmPwsxoOABvPdeOKExM0XAv/zSY9aNKDIvJ5JyIYFA1VONquAAAAAElFTkSuQmCC");
+}

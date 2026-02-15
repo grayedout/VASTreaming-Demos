@@ -1,0 +1,415 @@
+﻿<Project>
+
+  <Import Project="..\Common\Common.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(VastNetCoreTargets)</TargetFrameworks>
+    <AssemblyName>VAST.Demo.Server</AssemblyName>
+    <RootNamespace>VAST.Demo</RootNamespace>
+    <PackageId>com.vastreaming.demo.server</PackageId>
+    <DefineConstants>$(DefineConstants);NET_CORE</DefineConstants>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <Choose>
+    <When Condition="$(DefineConstants.Contains(VAST_LICENSE_SOURCE))">
+
+      <ItemGroup>
+        <ProjectReference Include="..\Common.Ext.NET.Linux\Common.Ext.NET.Linux.csproj" />
+      </ItemGroup>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_AUDIO))">
+          <ItemGroup>
+            <ProjectReference Include="..\Audio.NET\Audio.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+          <ItemGroup>
+            <ProjectReference Include="..\Network.NET\Network.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FFMPEG))">
+          <ItemGroup>
+            <ProjectReference Include="..\Codec.NET\Codec.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_COMMON))">
+          <ItemGroup>
+            <ProjectReference Include="..\File.NET\File.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_ISO))">
+          <ItemGroup>
+            <ProjectReference Include="..\File.ISO.NET\File.ISO.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_IMAGE)) Or $(DefineConstants.Contains(VAST_FEATURE_JPEG)) Or $(DefineConstants.Contains(VAST_FEATURE_MIXING))">
+          <ItemGroup>
+            <ProjectReference Include="..\Image.NET\Image.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_NDI))">
+          <ItemGroup>
+            <ProjectReference Include="..\NDI.NET\NDI.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTMP))">
+          <ItemGroup>
+            <ProjectReference Include="..\RTMP.NET\RTMP.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+          <ItemGroup>
+            <ProjectReference Include="..\RTSP.NET\RTSP.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_SRT))">
+          <ItemGroup>
+            <ProjectReference Include="..\SRT.NET\SRT.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_TS))">
+          <ItemGroup>
+            <ProjectReference Include="..\TS.NET\TS.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_HLS))">
+          <ItemGroup>
+            <ProjectReference Include="..\HLS.NET\HLS.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_MPEG_DASH))">
+          <ItemGroup>
+            <ProjectReference Include="..\DASH.NET\DASH.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+          <ItemGroup>
+            <ProjectReference Include="..\ICE.NET\ICE.NET.csproj" />
+            <ProjectReference Include="..\WebRTC.NET\WebRTC.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+    </When>
+    <When Condition="$(DefineConstants.Contains(VAST_LICENSE_ONLINE)) Or $(DefineConstants.Contains(VAST_LICENSE_FULL))">
+
+      <ItemGroup>
+        <Reference Include="VAST.Common.Ext">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.Ext.Linux.dll</HintPath>
+        </Reference>
+        <Reference Include="VAST.Common">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_AUDIO))">
+          <ItemGroup>
+            <Reference Include="VAST.Audio">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Audio.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+          <ItemGroup>
+            <Reference Include="VAST.Network">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Network.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FFMPEG))">
+          <ItemGroup>
+            <Reference Include="VAST.Codec">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Codec.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_MPEG_DASH))">
+          <ItemGroup>
+            <Reference Include="VAST.DASH">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.DASH.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_COMMON))">
+          <ItemGroup>
+            <Reference Include="VAST.File">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.File.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_ISO))">
+          <ItemGroup>
+            <Reference Include="VAST.File.ISO">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.File.ISO.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_HLS))">
+          <ItemGroup>
+            <Reference Include="VAST.HLS">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.HLS.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_IMAGE)) Or $(DefineConstants.Contains(VAST_FEATURE_JPEG)) Or $(DefineConstants.Contains(VAST_FEATURE_MIXING))">
+          <ItemGroup>
+            <Reference Include="VAST.Image">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Image.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_NDI))">
+          <ItemGroup>
+            <Reference Include="VAST.NDI">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.NDI.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTMP))">
+          <ItemGroup>
+            <Reference Include="VAST.RTMP">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.RTMP.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+          <ItemGroup>
+            <Reference Include="VAST.RTSP">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.RTSP.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_SRT))">
+          <ItemGroup>
+            <Reference Include="VAST.SRT">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.SRT.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_TS))">
+          <ItemGroup>
+            <Reference Include="VAST.TS">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.TS.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+          <ItemGroup>
+            <Reference Include="VAST.ICE">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.ICE.dll</HintPath>
+            </Reference>
+            <Reference Include="VAST.WebRTC">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.WebRTC.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+    </When>
+    <Otherwise>
+      <!-- VAST_LICENSE_DEMO -->
+      <ItemGroup>
+        <PackageReference Include="VAST.Demo.Core" Version="2026.2.15" />
+        <PackageReference Include="VAST.Demo.Ext.Linux" Version="2026.2.15" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="10.0.20" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.116.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Choose>
+    <When Condition="$(DefineConstants.Contains(VAST_FEATURE_API))">
+      <ItemGroup>
+        <None Update="API\api-audio-only.png">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+          <Link>api-audio-only.png</Link>
+          <Visible>false</Visible>
+        </None>
+        <None Update="API\api-background.jpg">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+          <Link>api-background.jpg</Link>
+          <Visible>false</Visible>
+        </None>
+        <None Update="API\api-watermark.png">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+          <Link>api-watermark.png</Link>
+          <Visible>false</Visible>
+        </None>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <None Update="API\api-audio-only.png">
+          <Visible>false</Visible>
+        </None>
+        <None Update="API\api-background.jpg">
+          <Visible>false</Visible>
+        </None>
+        <None Update="API\api-watermark.png">
+          <Visible>false</Visible>
+        </None>
+        <None Update="API\Samples.txt">
+          <Visible>false</Visible>
+        </None>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+      <ItemGroup>
+        <Compile Remove="MultiProtoServer.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_FILE_ISO))">
+      <ItemGroup>
+        <Compile Remove="FileReaderSample.cs" />
+        <Compile Remove="FileWriterSample1.cs" />
+        <Compile Remove="FileWriterSample2.cs" />
+        <Compile Remove="IsoFragmentWriterSample.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_RTMP))">
+      <ItemGroup>
+        <Compile Remove="SendSample2.cs" />
+        <Compile Remove="SimpleRtmpServer.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+      <ItemGroup>
+        <Compile Remove="SendSample1.cs" />
+        <Compile Remove="SimpleRtspServer.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+      <ItemGroup>
+        <Compile Remove="SimpleWebRtcServer.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+</Project>

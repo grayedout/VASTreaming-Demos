@@ -1,0 +1,25 @@
+@page
+@using VAST.Demo.Pages
+@model IndexModel
+
+<h2>Separate page model</h2>
+<p>
+    @Model.Message
+</p>
+
+<h2>Display Text</h2>
+<p>
+    @Model.DisplayText
+</p>
+
+<h2>Test HLS page</h2>
+<p>
+    Please uncomment sample #8, #9 or #10 in the constructor of MultiProtoServer first, then click the link below: <br />
+    <a href="/hls.html?publishingPath=builtin">Watch builtin publishing point</a>
+</p>
+
+<h2>Test WebTransport page</h2>
+<p>
+    Please enable WebTransport server and uncomment sample #8, #9 or #10 in the constructor of MultiProtoServer first, then click the link below: <br />
+    <a href="/wt.html">Watch builtin publishing point</a>
+</p>

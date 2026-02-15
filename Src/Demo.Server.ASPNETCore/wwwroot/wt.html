@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+
+  <title>To Browser</title>
+
+  <link rel="stylesheet" href="wt.css">
+</head>
+
+<body>
+  <div class="vast-video-container vast-playback-not-started">
+  </div>
+
+  <div style="margin-top: 16px;">
+    URI: <input id="uri" size="50" value="https://test.vastreaming.net:8443/wt/builtin" />
+    <button id="display">Play</button>
+    <button id="keyframeDecoding">Keyframe Decoding Toggle</button>
+    <a href="wt.html" target=_blank>Launch</a>
+  </div>
+
+  <script type="module">
+    import { WebTransportContext } from './wtMain.js';
+
+    var webTransportContext = null;
+
+    async function play()
+    {
+      webTransportContext.uri = document.getElementById("uri").value;
+      await webTransportContext.play(0);
+    }
+
+    let displayBtn = document.querySelector("#display");
+    displayBtn.addEventListener("click", async (e) =>
+    {
+      await play();
+    });
+
+    let keyframeDecodingBtn = document.querySelector("#keyframeDecoding");
+    keyframeDecodingBtn.addEventListener("click", async (e) =>
+    {
+      await webTransportContext.keyframeDecodingToggle();
+    });
+
+    async function onConnectedCallback(wt)
+    {
+      console.log("custom player logic here");
+    }
+
+    window.addEventListener("load", async () =>
+    {
+      const width = 1280;
+      const height = 720;
+
+      let options =
+      {
+        onConnectedCallback: onConnectedCallback
+      };
+
+      if (window.location.search.substring(1))
+      {
+        // Pass in any query string to start muted
+        options.startMuted = true;
+      }
+      else
+      {
+        options.startMuted = false;
+      }
+
+      webTransportContext = new WebTransportContext(window, document.querySelector(".vast-video-container"), width, height, options);
+
+      let c = new AudioContext();
+      let autoPlay = c.state == "running";
+
+      if (autoPlay)
+      {
+        await play();
+      }
+    });
+  </script>
+</body>
+</html>

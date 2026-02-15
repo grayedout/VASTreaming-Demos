@@ -1,0 +1,41 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:8888/",
+      "sslPort": 8889
+    }
+  },
+  "profiles": {
+    "Demo.Server.Blazor (Kestrel)": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "VAST_HTTP_SERVER": "Kestrel"
+      },
+      "applicationUrl": "http://localhost:8888"
+    },
+    "Demo.Server.Blazor (IIS Express)": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "http://localhost:8888",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "VAST_HTTP_SERVER": "IIS"
+      }
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "launchBrowser": true,
+      "launchUrl": "http://localhost:8889",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:8888",
+        "VAST_HTTP_SERVER": "Kestrel"
+      },
+      "distributionName": ""
+    }
+  }
+}

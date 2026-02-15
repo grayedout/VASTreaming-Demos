@@ -1,0 +1,256 @@
+﻿1. Authorize
+============
+
+POST http://127.0.0.1:8888/api/v1/auth
+
+Sample body:
+
+{
+  "name": "admin",
+  "password": "admin"
+}
+
+
+
+2. Create mixing publishing point
+=================================
+
+POST http://127.0.0.1:8888/api/v1/publishing-point?token=TODO_replace_with_authentication_token
+
+Sample body:
+
+{
+  "path": "mix",
+  "title": "Mixing Publishing Point Test",
+  "streaming-mode": "live",
+  "allow-video-processing": true,
+  "sources": [
+    {
+      "uri": "vast://publishing-point/host1"
+    },
+    {
+      "uri": "vast://publishing-point/host2"
+    },
+    {
+      "uri": "vast://publishing-point/host3"
+    },
+    {
+      "uri": "vast://publishing-point/host4"
+    },
+    {
+      "uri": "file:///api-background.jpg"
+    },
+    {
+      "uri": "file:///api-watermark.png"
+    },
+    {
+      "uri": "file:///api-audio-only.png"
+    }
+  ],
+  "processing": {
+    "video": {
+      "discard": false,
+      "transcoding": true,
+      "tracks": [
+        {
+          "index": 0,
+          "width": 1280,
+          "height": 720,
+          "framerate": "30/1",
+          "keyframe-interval": 30,
+          "bitrate": 3000000,
+          "codec": "H264",
+          "profile": 66,
+          "mixing": {
+            "type": "all",
+            "layers": [
+              {
+                "sources": [ 4 ],
+                "layout": "manual",
+                "stretch": "fill"
+              },
+              {
+                "sources": [ 0, 1, 2, 3 ],
+                "layout": "auto",
+                "stretch": "zoom"
+              },
+              {
+                "sources": [ 5 ],
+                "layout": "manual",
+                "stretch": "fill",
+                "location": [ 50, 50, 295, 109 ],
+                "opacity": 0.7
+              }
+            ],
+            "audio-source-image": 6
+          }
+        }
+      ]
+    },
+    "audio": {
+      "discard": false,
+      "transcoding": true,
+      "tracks": [
+        {
+          "index": 1,
+          "sample-rate": 44100,
+          "channels": 1,
+          "bitrate": 128000,
+          "codec": "AAC",
+          "mixing": {
+            "type": "all"
+          }
+        }
+      ]
+    }
+  }
+}
+
+Notes:
+
+- Source URI vast://publishing-point/<publishing-path> means that mixing publishing point is using publishing point with a path <publishing-path> as a source.
+So, for the above sample when somebody starts publishing to rtmp://127.0.0.1/live/host1 then mixing publishing point picks up the stream and shows it on layer 2.
+Image file path file:///api-background.jpg is a shortcut to a folder with server binary. Absolute file URI can be used, eg file://C:/Images/image.png.
+It's also possible to use http link as an image source.
+
+- Layers are declared with incrementing Z order, i.e. layer N+1 overlaps layers 0..N. Last declared layer overlaps all other layers.
+
+- Layer with manual layout must link only one source. Layer with auto layout can link any number of sources.
+
+- Location is an array of 4 integer coordinates: left, top, right, bottom.
+
+- Refer to server OpenAPI specification for more details
+
+
+
+3a. Update mixing settings
+==========================
+
+PUT http://127.0.0.1:8888/api/v1/publishing-point/mix?token=TODO_replace_with_authentication_token
+
+Sample body:
+
+{
+  "processing": {
+    "video": {
+      "tracks": [
+        {
+          "index": 0,
+          "mixing": {
+            "type": "all",
+            "layers": [
+              {
+                "sources": [ 4 ],
+                "layout": "manual",
+                "stretch": "fill"
+              },
+              {
+                "sources": [ 0 ],
+                "layout": "manual",
+                "stretch": "zoom"
+              },
+              {
+                "sources": [ 5 ],
+                "layout": "manual",
+                "stretch": "fill",
+                "location": [ 50, 50, 295, 109 ],
+                "opacity": 0.7
+              }
+            ],
+            "audio-source-image": 6
+          }
+        }
+      ]
+    }
+  }
+}
+
+Notes:
+
+- Provided sample changes layer 2 from showing all connected sources to showing of single source 0 full screen.
+
+
+
+3b. Update sources
+==================
+
+PUT http://127.0.0.1:8888/api/v1/publishing-point/mix?token=TODO_replace_with_authentication_token
+
+Sample body:
+
+{
+  "sources": [
+    {
+      "uri": "vast://publishing-point/host1"
+    },
+    {
+      "uri": "vast://publishing-point/host2"
+    },
+    {
+      "uri": "vast://publishing-point/host3"
+    },
+    {
+      "uri": "vast://publishing-point/host4"
+    },
+    {
+      "uri": "vast://publishing-point/host5"
+    },
+    {
+      "uri": "vast://publishing-point/host6"
+    },
+    {
+      "uri": "file:///api-background.jpg"
+    },
+    {
+      "uri": "file:///api-watermark.png"
+    },
+    {
+      "uri": "file:///api-audio-only.png"
+    }
+  ],
+  "processing": {
+    "video": {
+      "tracks": [
+        {
+          "index": 0,
+          "mixing": {
+            "type": "all",
+            "layers": [
+              {
+                "sources": [ 6 ],
+                "layout": "manual",
+                "stretch": "fill"
+              },
+              {
+                "sources": [ 0, 1, 2, 3, 4, 5 ],
+                "layout": "auto",
+                "stretch": "zoom"
+              },
+              {
+                "sources": [ 7 ],
+                "layout": "manual",
+                "stretch": "fill",
+                "location": [ 50, 50, 295, 109 ],
+                "opacity": 0.7
+              }
+            ],
+            "audio-source-image": 8
+          }
+        }
+      ]
+    }
+  }
+}
+
+Notes:
+
+- If you want to update source list then the complete new list must be specified.
+
+- If new source list affects currently active sources in the mixing settings then new mixing settings must be provided as well.
+
+
+
+4. Delete mixing publishing point
+=================================
+
+DELETE http://127.0.0.1:8888/api/v1/publishing-point/mix?token=TODO_replace_with_authentication_token

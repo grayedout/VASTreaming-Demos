@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>VAST_LICENSE_SOURCE;VAST_FEATURE_CORESERVER;VAST_FEATURE_FILE_COMMON;VAST_FEATURE_FILE_ISO;VAST_FEATURE_HLS;VAST_FEATURE_IMAGE;VAST_FEATURE_JPEG;VAST_FEATURE_MF;VAST_FEATURE_MIXING;VAST_FEATURE_RTMP;VAST_FEATURE_RTSP;VAST_FEATURE_TS;VAST_FEATURE_WEBRTC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <PropertyGroup Label="Globals">
+    <DefineConstants>VAST_LICENSE_SOURCE;VAST_FEATURE_CORESERVER;VAST_FEATURE_FILE_COMMON;VAST_FEATURE_FILE_ISO;VAST_FEATURE_HLS;VAST_FEATURE_IMAGE;VAST_FEATURE_JPEG;VAST_FEATURE_MF;VAST_FEATURE_MIXING;VAST_FEATURE_RTMP;VAST_FEATURE_RTSP;VAST_FEATURE_TS;VAST_FEATURE_WEBRTC</DefineConstants>
+  </PropertyGroup>
+</Project>

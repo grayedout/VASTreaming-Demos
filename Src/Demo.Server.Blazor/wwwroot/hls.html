@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <title>HLS player demo</title>
+  </head>
+
+  <body>
+    <script src="dist/hls.js"></script>
+
+    <center>
+      <video width="1280" id="video" controls autoplay></video>
+    </center>
+
+    <script>
+        var urlParams;
+        (function ()
+        {
+            var match,
+                pl     = /\+/g,  // Regex for replacing addition symbol with a space
+                search = /([^&=]+)=?([^&]*)/g,
+                decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+                query  = window.location.search.substring(1);
+
+            urlParams = {};
+            while (match = search.exec(query))
+            {
+               urlParams[decode(match[1])] = decode(match[2]);
+            }
+        })();
+
+        var video = document.getElementById('video');
+
+        var publishingPath = "";
+        if (urlParams["publishingPath"])
+        {
+            publishingPath = urlParams["publishingPath"];
+        }
+
+        var lowLatencyMode = true;
+        if (urlParams["lowLatencyMode"])
+        {
+            if (urlParams["lowLatencyMode"] == "false")
+            {
+                lowLatencyMode = false;
+            }
+        }
+
+        var debug = false;
+        if (urlParams["debug"])
+        {
+            if (urlParams["debug"] == "true")
+            {
+                debug = true;
+            }
+        }
+
+        var enableWorker = true;
+        if (urlParams["enableWorker"])
+        {
+            if (urlParams["enableWorker"] == "false")
+            {
+                enableWorker = false;
+            }
+        }
+
+        if (Hls.isSupported())
+        {
+            var hls = new Hls(
+            {
+                "debug": debug,
+                "enableWorker": enableWorker,
+                "lowLatencyMode": lowLatencyMode,
+                "backBufferLength": 90
+            });
+
+            hls.loadSource('/hls/' + publishingPath);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MEDIA_ATTACHED, function()
+            {
+                video.muted = true;
+                video.play();
+            });
+        }
+      // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
+      // When the browser has built-in HLS support (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video element throught the `src` property.
+      // This is using the built-in support of the plain video element, without using hls.js.
+        else if (video.canPlayType('application/vnd.apple.mpegurl'))
+        {
+            video.src = '/hls/' + publishingPath;
+            video.addEventListener('canplay', function()
+            {
+                video.muted = true;
+                video.play();
+            });
+        }
+    </script>
+
+    <p>
+      <center>
+        Run API command GET /siteApi/v1/displayText?text=Put%20your%20text%20here to change the second line of the text in the video
+      </center>
+    </p>
+</body>
+</html>

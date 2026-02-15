@@ -1,0 +1,653 @@
+<html>
+<head>
+    <title>WebRTC publisher test page</title>
+</head>
+<body>
+
+    <div>
+        <video id="local-video" width="320" height="240" autoplay playsinline muted></video><br>
+        <video id="remote-video1" width="320" height="240" autoplay playsinline></video>
+        <video id="remote-video2" width="320" height="240" autoplay playsinline></video>
+        <video id="remote-video3" width="320" height="240" autoplay playsinline></video>
+    </div>
+
+    <hr>
+    <label for="video-source">Camera: </label><select id="video-source"></select>
+    <br>
+    <label for="audio-source">Microphone: </label><select id="audio-source"></select>
+    <br><br>
+    Server: <input type="text" id="server" value="ws://192.168.0.102:8888/rtc" /><br>
+    Room: <input type="text" id="room" value="conference" /><br>
+    Publishing path: <input type="text" id="pub-path" value="host1" />
+    <br><br>
+    <button id="connect" onclick="connect();">Start</button>
+    <button disabled="true" id="disconnect" onclick="disconnect();">Stop</button>
+    <br>
+    <button onclick="document.getElementById('debug').innerHTML='';">Clear log</button>
+    <hr>
+    <br>
+    <pre id="debug"></pre>
+
+    <script>
+
+        const pcConfig = { "iceServers": [{ "urls": ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19305"] }] };
+        //const pcConfig = { "iceServers": [{ "urls": ["turn:127.0.0.1:3478"], "username": "user", "credential": "password" }] };
+
+        var websocket = null;
+        var myId = -1;
+        var remotePeers = new Map();
+        var localStream;
+        var signallingUri;
+        var pingInterval = null;
+        var disconnecting = false;
+        var remoteVideoElements = ["remote-video1", "remote-video2", "remote-video3"];
+
+        enumerateDevices();
+
+        async function enumerateDevices() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                let devices = await navigator.mediaDevices.enumerateDevices();
+                gotDevices(devices);
+                if (localStream != null) {
+                    localStream.getTracks().forEach(function (track) {
+                        track.stop();
+                    });
+                    localStream = null;
+                }
+            } catch (e) {
+                trace("enumerate error: " + e);
+            }
+        }
+
+        function gotDevices(deviceInfos) {
+            var audioInputSelect = document.getElementById("audio-source");
+            var videoInputSelect = document.getElementById("video-source");
+            trace("found " + deviceInfos.length + " devices");
+            for (let i = 0; i !== deviceInfos.length; ++i) {
+                const deviceInfo = deviceInfos[i];
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                if (deviceInfo.kind === 'audioinput') {
+                    option.text = deviceInfo.label || `Microphone ${audioInputSelect.length + 1}`;
+                    audioInputSelect.appendChild(option);
+                } else if (deviceInfo.kind === 'videoinput') {
+                    option.text = deviceInfo.label || `Camera ${videoInputSelect.length + 1}`;
+                    videoInputSelect.appendChild(option);
+                }
+            }
+        }
+
+        function connect() {
+            document.getElementById("connect").disabled = true;
+            document.getElementById("disconnect").disabled = false;
+            signIn();
+        }
+
+        function disconnect() {
+            try {
+                if (disconnecting) return;
+
+                disconnecting = true;
+
+                if (websocket) {
+                    sendToPeer("sign-out", 1, null, null);
+                    // close web socket after timeout to make sure server receives our sign-out message
+                    try {
+                        window.setTimeout(() => {
+                            try {
+                                websocket.close();
+                            } catch (e) {
+                            }
+                            websocket = null;
+                            trace("Web socket closed");
+                        }, 3000);
+                    } catch (e) {
+                        trace("Hanging get send error: " + e);
+                    }
+                }
+
+                if (pingInterval != null) {
+                    clearInterval(pingInterval);
+                    pingInterval = null;
+                }
+
+                myId = -1;
+
+                if (localStream != null) {
+                    localStream.getTracks().forEach(function (track) {
+                        track.stop();
+                    });
+                    localStream = null;
+                }
+
+                for (const [key, value] of remotePeers.entries()) {
+                    try {
+                        if (value.localPc != null) {
+                            if (value.senders != null) {
+                                for (let i = 0; i < value.senders.length; i++) {
+                                    value.localPc.removeTrack(value.senders[i]);
+                                    trace("Removed sender #" + i);
+                                }
+                                value.senders = [];
+                            }
+                            value.localPc.close();
+                        }
+                    } catch (e) {
+                        trace("Local PC close error: " + e);
+                    }
+                    try {
+                        if (value.remotePc != null) {
+                            value.remotePc.close();
+                        }
+                    } catch (e) {
+                        trace("Remote PC close error: " + e);
+                    }
+                }
+
+                remotePeers = new Map();
+                remoteVideoElements = ["remote-video1", "remote-video2", "remote-video3"];
+
+                document.getElementById("connect").disabled = false;
+                document.getElementById("disconnect").disabled = true;
+
+                try {
+                    var videoElement = document.getElementById('local-video');
+                    videoElement.stop();
+                } catch (e) {
+                }
+
+                try {
+                    var videoElement = document.getElementById('remote-video1');
+                    videoElement.stop();
+                } catch (e) {
+                }
+
+                try {
+                    var videoElement = document.getElementById('remote-video2');
+                    videoElement.stop();
+                } catch (e) {
+                }
+
+                try {
+                    var videoElement = document.getElementById('remote-video3');
+                    videoElement.stop();
+                } catch (e) {
+                }
+
+                trace("Disconnected from a room");
+            } catch (e) {
+                trace("Disconnect error: " + e);
+            }
+        }
+
+        async function signIn() {
+            try {
+                disconnecting = false;
+
+                var audioInputSelect = document.getElementById("audio-source");
+                const audioSource = audioInputSelect.value;
+                var videoInputSelect = document.getElementById("video-source");
+                const videoSource = videoInputSelect.value;
+                const constraints = {
+                    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                    video: { deviceId: videoSource ? { exact: videoSource } : undefined, width: { exact: 320 }, height: { exact: 240 } }
+                };
+
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                var videoElement = document.getElementById('local-video');
+                videoElement.srcObject = localStream;
+                videoElement.play();
+
+                var remoteVideoElement = document.getElementById('remote-video1');
+                remoteVideoElement.play();
+                remoteVideoElement = document.getElementById('remote-video2');
+                remoteVideoElement.play();
+                remoteVideoElement = document.getElementById('remote-video3');
+                remoteVideoElement.play();
+                //trace("called remoteVideoElement.play()");
+
+                var publishingPath = document.getElementById("pub-path").value.toLowerCase();
+                var room = document.getElementById("room").value.toLowerCase();
+                signallingUri = document.getElementById("server").value.toLowerCase();
+
+                var uri = signallingUri + "/sign-in?room=" + room;
+                if (publishingPath != null && publishingPath.length > 0) {
+                    // enable publishing to streaming server if publishing path specified
+                    uri += "&publishing-path=" + publishingPath + "&publish=true";
+                }
+
+                websocket = new WebSocket(uri);
+                websocket.onopen = function (e) {
+                    trace("Signalling server connected");
+                };
+                websocket.onclose = function (e) {
+                    trace("Signalling server disconnected. Code: " + e.code + ", reason: " + e.reason);
+                    disconnect();
+                };
+                websocket.onmessage = function (e) {
+                    processResponse(e.data);
+                };
+                websocket.onerror = function (e) {
+                    trace("Web socket error: " + e.data);
+                };
+            } catch (e) {
+                trace("Sing in error: " + e);
+            }
+        }
+
+        function processResponse(data) {
+            if (data == null || data.length == 0) return;
+
+            var dataJson = JSON.parse(data);
+            if (dataJson == null) {
+                trace(str);
+                trace("Unsupported message!");
+                return;
+            }
+
+            var peerId = parseInt(dataJson.from);
+            var subtype = dataJson.subtype;
+            var remotePeer = remotePeers.get(peerId);
+            var str = "Message from " + peerId + " '" + ((peerId == 1 || remotePeer == null) ? "server" : remotePeer.name) + "': " + data;
+
+            if (dataJson["data-type"] == "peer-list") {
+                myId = parseInt(dataJson.data[0].id);
+                trace("My id: " + myId);
+                for (var i = 1; i < dataJson.data.length; i++) {
+                    trace("Peer " + i + ": id " + dataJson.data[i].id + ", name: " + dataJson.data[i].name + ", state: " + dataJson.data[i].state);
+                    var remotePeerId = parseInt(dataJson.data[i].id);
+                    var remotePeerState = parseInt(dataJson.data[i].state);
+                    var newRemotePeer = { peerId: remotePeerId, name: dataJson.data[i].name, state: remotePeerState, localPc: null, remotePc: null, remoteVideoElement: "", senders: [] };
+                    remotePeers.set(remotePeerId, newRemotePeer);
+                    if (remotePeerState > 0) {
+                        createLocalPeerConnection(newRemotePeer);
+                    }
+                }
+
+                pingInterval = setInterval(() => {
+                    sendToPeer("ping", 1, null, null);
+                }, 10000);
+            }
+            else if (dataJson["data-type"] == "peer-list-update") {
+                for (var i = 0; i < dataJson.data.length; i++) {
+                    trace("Peer " + i + ": id " + dataJson.data[i].id + ", name: " + dataJson.data[i].name + ", state: " + dataJson.data[i].state);
+                    var remotePeerId = parseInt(dataJson.data[i].id);
+                    var remotePeerState = parseInt(dataJson.data[i].state);
+                    if (remotePeerState == 0) {
+                        var deletedPeer = remotePeers.get(remotePeerId);
+                        if (deletedPeer != null) {
+                            remotePeers.delete(remotePeerId);
+                            try {
+                                if (deletedPeer.senders != null) {
+                                    for (let i = 0; i < deletedPeer.senders.length; i++) {
+                                        deletedPeer.localPc.removeTrack(deletedPeer.senders[i]);
+                                        trace("Removed sender #" + i);
+                                    }
+                                    deletedPeer.senders = [];
+                                }
+                                deletedPeer.localPc.close();
+                            } catch (e) {
+                                trace("Local PC close error: " + e);
+                            }
+                            try {
+                                deletedPeer.remotePc.close();
+                            } catch (e) {
+                                trace("Local PC close error: " + e);
+                            }
+                            if (deletedPeer.remoteVideoElement != null && deletedPeer.remoteVideoElement.length > 0) {
+                                try {
+                                    var videoElement = document.getElementById(deletedPeer.remoteVideoElement);
+                                    videoElement.stop();
+                                } catch (e) {
+                                }
+                                remoteVideoElements.push(deletedPeer.remoteVideoElement);
+                            }
+                        }
+                    } else {
+                        if (!remotePeers.has(remotePeerId)) {
+                            var newRemotePeer = { peerId: remotePeerId, name: dataJson.data[i].name, state: remotePeerState, localPc: null, remotePc: null, remoteVideoElement: "", senders: [] };
+                            remotePeers.set(remotePeerId, newRemotePeer);
+                            createLocalPeerConnection(newRemotePeer);
+                        }
+                    }
+                }
+            }
+            else if (dataJson["data-type"] == "message") {
+                trace(str);
+                dataJson = dataJson.data;
+                if (dataJson != null && dataJson.type != null && dataJson.type == "offer") {
+                    trace("Received SDP offer, creating remote PC...");
+                    createRemotePeerConnection(remotePeer);
+                    trace("Preparing SDP answer...");
+                    remotePeer.remotePc.setRemoteDescription(new RTCSessionDescription(dataJson), onRemoteSdpSucces, onRemoteSdpError);
+                    remotePeer.remotePc.createAnswer(function (sessionDescription) {
+                        if (sessionDescription == null) {
+                            trace("Sending SDP answer (callback): undefined SDP");
+                        }
+                        else {
+                            remotePeer.remotePc.setLocalDescription(sessionDescription, onSetLocalSdpSuccess, onSetLocalSdpError);
+                            var data = JSON.stringify(sessionDescription);
+                            trace("Prepared SDP answer (callback): " + data);
+                            sendToPeer("message", peerId, data, null);
+                        }
+                    }, function (error) { // error
+                        trace("Create answer error: " + error);
+                    }).then(function (sessionDescription) {
+                        if (sessionDescription == null) {
+                            trace("Sending SDP answer (then): undefined SDP");
+                        }
+                        else {
+                            remotePeer.remotePc.setLocalDescription(sessionDescription, onSetLocalSdpSuccess, onSetLocalSdpError);
+                            var data = JSON.stringify(sessionDescription);
+                            trace("Prepared SDP answer (then): " + data);
+                            sendToPeer("message", peerId, data, null);
+                        }
+                    }).catch((error) => {
+                        trace("Create SDP answer error: " + error);
+                    });
+                }
+                else if (dataJson != null && dataJson.type != null && dataJson.type == "answer") {
+                    trace("Received SDP answer");
+                    remotePeer.localPc.setRemoteDescription(new RTCSessionDescription(dataJson), onRemoteSdpSucces, onRemoteSdpError);
+                }
+                else if (dataJson != null && dataJson.candidate != null) {
+                    if (subtype == null) subtype = "local";
+                    var candidate = new RTCIceCandidate({ sdpMLineIndex: dataJson.sdpMLineIndex, candidate: dataJson.candidate });
+                    if (remotePeer.remotePc != null && subtype == "local") {
+                        trace("Adding ICE candidate to remote PC " + dataJson.candidate);
+                        remotePeer.remotePc.addIceCandidate(candidate, onAddIceCandidateSuccess, onAddIceCandidateError);
+                    } else if (remotePeer.localPc != null && subtype == "remote") {
+                        trace("Adding ICE candidate to local PC " + dataJson.candidate);
+                        remotePeer.localPc.addIceCandidate(candidate, onAddIceCandidateSuccess, onAddIceCandidateError);
+                    }
+                }
+                else if (dataJson != null && dataJson.action != null) {
+                    if (dataJson.action == "reconnect") {
+                        trace(str);
+                        if (remotePeer != null) {
+                            try {
+                                if (remotePeer.localPc != null) {
+                                    if (remotePeer.senders != null) {
+                                        for (let i = 0; i < remotePeer.senders.length; i++) {
+                                            remotePeer.localPc.removeTrack(remotePeer.senders[i]);
+                                            trace("Removed sender #" + i);
+                                        }
+                                        remotePeer.senders = [];
+                                    }
+                                    remotePeer.localPc.close();
+                                }
+                            } catch (e) {
+                                trace("Local PC close error: " + e);
+                            }
+                            try {
+                                if (remotePeer.remotePc != null) {
+                                    remotePeer.remotePc.close();
+                                }
+                            } catch (e) {
+                                trace("Remote PC close error: " + e);
+                            }
+                            remotePeer.localPc = null;
+                            remotePeer.remotePc = null;
+                            createLocalPeerConnection(remotePeer);
+                        }
+                    }
+                }
+                else {
+                    trace("Unsupported message!");
+                }
+            }
+            else if (dataJson["data-type"] == "action") {
+                //trace(str);
+                dataJson = dataJson.data;
+                if (dataJson.action == "disconnect") {
+                    trace(str);
+                    disconnect();
+                } else {
+                    trace("Unsupported action: " + dataJson.action);
+                }
+            }
+            else {
+                trace(str);
+                trace("Unsupported message!");
+            }
+        }
+
+        function sendToPeer(dataType, peerId, data, subtype) {
+            try {
+                var dataJson = '{"data-type":"' + dataType + '","from":' + myId + ',"to":' + peerId;
+                if (subtype != null) {
+                    dataJson += ',"subtype":"' + subtype + '"';
+                }
+                if (data != null) {
+                    dataJson += ',"data":' + data;
+                }
+                dataJson += '}';
+                trace("Sending: " + dataJson);
+                websocket.send(dataJson);
+            } catch (e) {
+                trace("send to peer error: " + e);
+            }
+        }
+
+        function createRemotePeerConnection(remotePeer) {
+            try {
+                remotePeer.remotePc = new RTCPeerConnection(pcConfig);
+                remotePeer.remotePc.onicecandidate = function (event) {
+                    if (event.candidate) {
+                        var candidate = {
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            sdpMid: event.candidate.sdpMid,
+                            candidate: event.candidate.candidate
+                        };
+                        sendToPeer("message", remotePeer.peerId, JSON.stringify(candidate), "remote");
+                    } else {
+                        trace("Peer " + remotePeer.peerId + " remote PC end of candidates.");
+                    }
+                };
+                remotePeer.remotePc.onconnecting = function (message) {
+                    trace("Peer " + remotePeer.peerId + " remote PC session connecting.");
+                };
+                remotePeer.remotePc.onopen = function (message) {
+                    trace("Peer " + remotePeer.peerId + " remote PC session opened.");
+                };
+                remotePeer.remotePc.ontrack = function (event) {
+                    try {
+                        if (remotePeer.remoteVideoElement != null && remotePeer.remoteVideoElement.length > 0) {
+                            var remoteVideoElement = document.getElementById(remotePeer.remoteVideoElement);
+                            remoteVideoElement.srcObject = event.streams[0];
+                            trace("Remote stream added: " + event.track.kind + ", active: " + event.streams[0].active);
+                        }
+                    } catch (e) {
+                        trace("Remote stream added exception: " + e);
+                    }
+                };
+                remotePeer.remotePc.onremovestream = function (event) {
+                    trace("Peer " + remotePeer.peerId + " remote PC remote stream removed.");
+                };
+                remotePeer.remotePc.onidpvalidationerror = function (ev) {
+                    trace("Peer " + remotePeer.peerId + " remote PC onidpvalidationerror");
+                };
+                remotePeer.remotePc.onidpassertionerror = function (ev) {
+                    trace("Peer " + remotePeer.peerId + " remote PC onidpassertionerror");
+                };
+                remotePeer.remotePc.onconnectionstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " remote PC connection state changed to " + remotePeer.remotePc.connectionState);
+                };
+                remotePeer.remotePc.oniceconnectionstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " remote PC ICE connection state changed to " + remotePeer.remotePc.iceConnectionState);
+                    //if (remotePeer.remotePc.iceConnectionState == "disconnected") {
+                    //    try {
+                    //        try {
+                    //            if (remotePeer.localPc != null) {
+                    //                if (remotePeer.senders != null) {
+                    //                    for (let i = 0; i < remotePeer.senders.length; i++) {
+                    //                        remotePeer.localPc.removeTrack(remotePeer.senders[i]);
+                    //                        trace("Removed sender #" + i);
+                    //                    }
+                    //                    remotePeer.senders = [];
+                    //                }
+                    //                remotePeer.localPc.close();
+                    //            }
+                    //        } catch (e) {
+                    //            trace("Local PC close error: " + e);
+                    //        }
+                    //        try {
+                    //            if (remotePeer.remotePc != null) {
+                    //                remotePeer.remotePc.close();
+                    //            }
+                    //        } catch (e) {
+                    //            trace("Remote PC close error: " + e);
+                    //        }
+                    //        remotePeer.localPc = null;
+                    //        remotePeer.remotePc = null;
+                    //        if (remotePeer.remoteVideoElement != null && remotePeer.remoteVideoElement.length > 0) {
+                    //            try {
+                    //                var videoElement = document.getElementById(remotePeer.remoteVideoElement);
+                    //                videoElement.stop();
+                    //            } catch (e) {
+                    //            }
+                    //            remoteVideoElements.push(remotePeer.remoteVideoElement);
+                    //        }
+                    //        remotePeer.remoteVideoElement = null;
+                    //        sendToPeer("message", remotePeer.peerId, '{"action":"reconnect"}', null);
+                    //        createLocalPeerConnection(remotePeer);
+                    //    } catch (e) {
+                    //        trace("Remote PC close error: " + e);
+                    //    }
+                    //}
+                };
+                remotePeer.remotePc.onicegatheringstatechange = function () {
+                    trace("Peer " + remotePeer.peerId + " remote PC ICE gathering state changed to " + remotePeer.remotePc.iceGatheringState);
+                };
+                remotePeer.remotePc.onsignalingstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " remote PC signaling state changed to " + remotePeer.remotePc.signalingState);
+                };
+                if (remoteVideoElements.length == 0) {
+                    trace("No more video elements to play remote stream");
+                } else {
+                    remotePeer.remoteVideoElement = remoteVideoElements.shift();
+                    trace("Peer " + remotePeer.peerId + " assigned video element " + remotePeer.remoteVideoElement);
+                }
+                trace("Peer " + remotePeer.peerId + " remote PC created");
+            }
+            catch (e) {
+                trace("Peer " + remotePeer.peerId + " failed to create remote PC, exception: " + e);
+            }
+        }
+
+        function createLocalPeerConnection(remotePeer) {
+            try {
+                remotePeer.localPc = new RTCPeerConnection(pcConfig);
+                remotePeer.localPc.onicecandidate = function (event) {
+                    if (event.candidate) {
+                        var candidate = {
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            sdpMid: event.candidate.sdpMid,
+                            candidate: event.candidate.candidate
+                        };
+                        sendToPeer("message", remotePeer.peerId, JSON.stringify(candidate), "local");
+                    } else {
+                        trace("Peer " + remotePeer.peerId + " local PC end of candidates.");
+                    }
+                };
+                remotePeer.localPc.onconnecting = function (message) {
+                    trace("Peer " + remotePeer.peerId + " local PC session connecting.");
+                };
+                remotePeer.localPc.onopen = function (message) {
+                    trace("Peer " + remotePeer.peerId + " local PC session opened.");
+                };
+                remotePeer.localPc.onremovestream = function (event) {
+                    trace("Peer " + remotePeer.peerId + " local PC remote stream removed.");
+                };
+                remotePeer.localPc.onidpvalidationerror = function (ev) {
+                    trace("Peer " + remotePeer.peerId + " local PC onidpvalidationerror");
+                };
+                remotePeer.localPc.onidpassertionerror = function (ev) {
+                    trace("Peer " + remotePeer.peerId + " local PC onidpassertionerror");
+                };
+                remotePeer.localPc.onnegotiationneeded = async function () {
+                    try {
+                        trace("Peer " + remotePeer.peerId + " local PC onnegotiationneeded");
+                        await remotePeer.localPc.setLocalDescription(await remotePeer.localPc.createOffer());
+                        var data = JSON.stringify(remotePeer.localPc.localDescription);
+                        trace("Prepared SDP offer: " + data);
+                        sendToPeer("message", remotePeer.peerId, data, null);
+                    } catch (e) {
+                        trace("Failed to negotiate, exception: " + e);
+                    }
+                };
+                remotePeer.localPc.onconnectionstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " local PC connection state changed to " + remotePeer.localPc.connectionState);
+                };
+                remotePeer.localPc.oniceconnectionstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " local PC ICE connection state changed to " + remotePeer.localPc.iceConnectionState);
+                };
+                remotePeer.localPc.onicegatheringstatechange = function () {
+                    trace("Peer " + remotePeer.peerId + " local PC ICE gathering state changed to " + remotePeer.localPc.iceGatheringState);
+                };
+                remotePeer.localPc.onsignalingstatechange = function (event) {
+                    trace("Peer " + remotePeer.peerId + " local PC signaling state changed to " + remotePeer.localPc.signalingState);
+                };
+                localStream.getTracks().forEach((track) => {
+                    try {
+                        trace("Local stream added: " + track.kind + ", active: " + localStream.active);
+                        var sender = remotePeer.localPc.addTrack(track, localStream);
+                        remotePeer.senders.push(sender);
+                    } catch (e) {
+                        trace("Local stream added exception: " + e);
+                    }
+                });
+                trace("Peer " + remotePeer.peerId + " local PC created");
+            }
+            catch (e) {
+                trace("Peer " + remotePeer.peerId + " Failed to create local PC, exception: " + e);
+            }
+        }
+
+        function onSetLocalSdpSuccess() {
+            trace("setLocalDescription success");
+        }
+
+        function onSetLocalSdpError() {
+            trace("setLocalDescription failed");
+        }
+
+        function onAddIceCandidateSuccess() {
+            trace("addIceCandidate success");
+        }
+
+        function onAddIceCandidateError() {
+            trace("addIceCandidate failed");
+        }
+
+        function onRemoteSdpSucces() {
+            trace('onRemoteSdpSucces');
+        }
+
+        function onRemoteSdpError(event) {
+            trace("onRemoteSdpError: event.name: " + event.name + ", event.message: " + event.message);
+        }
+
+        function parseIntHeader(r, name) {
+            var val = r.getResponseHeader(name);
+            return val != null && val.length ? parseInt(val) : -1;
+        }
+
+        function showRecordingError(text) {
+            var elem = document.getElementById("recording-error");
+            elem.innerHTML = text + " Recorded judge voice will mismatch the performance. Please restart the recording!";
+        }
+
+        function trace(txt) {
+            var elem = document.getElementById("debug");
+            elem.innerHTML += txt + "<br>";
+            console.log(txt);
+        }
+
+        window.onbeforeunload = disconnect;
+    </script>
+
+</body>
+</html>

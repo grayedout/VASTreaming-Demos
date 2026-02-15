@@ -1,0 +1,274 @@
+<html>
+<head>
+<title>WebRTC playback test page</title>
+</head>
+<body>
+    <script>
+        var websocket = null;
+        var localName;
+        var server;
+        var myId = -1;
+        var otherPeers = {};
+        var pc;
+        //var pcConfig = {"iceServers": [{"urls": ["turn:208.110.101.105:3478"], "username": "vastuser", "credential": "vastpassword"}]};
+        var pcConfig = { "iceServers": [{ "urls": ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19305"] }] };
+        var pingInterval = null;
+        var disconnecting = false;
+
+        function connect() {
+            localName = document.getElementById("local").value.toLowerCase();
+            server = document.getElementById("server").value.toLowerCase();
+            if (localName.length == 0) {
+                alert("I need a name please.");
+                document.getElementById("local").focus();
+            } else {
+                document.getElementById("connect").disabled = true;
+                document.getElementById("disconnect").disabled = false;
+                signIn();
+            }
+        }
+
+        function disconnect() {
+            disconnecting = true;
+
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+
+            if (pingInterval != null) {
+                clearInterval(pingInterval);
+                pingInterval = null;
+            }
+
+            myId = -1;
+            document.getElementById("connect").disabled = false;
+            document.getElementById("disconnect").disabled = true;
+            disconnecting = false;
+        }
+
+        function signIn() {
+            try {
+                var remoteVideoElement = document.getElementById('remote-video');
+                remoteVideoElement.play();
+                trace("called remoteVideoElement.play()");
+                websocket = new WebSocket(server + "/sign_in?channel=" + localName);
+                websocket.onopen = function (e) {
+                    trace("Signalling server connected");
+                };
+                websocket.onclose = function (e) {
+                    trace("Signalling server disconnected. Code: " + e.code + ", reason: " + e.reason);
+                    if (!disconnecting) {
+                        disconnect();
+                    }
+                };
+                websocket.onmessage = function (e) {
+                    handlePeerMessage(e.data);
+                };
+                websocket.onerror = function (e) {
+                    trace("Error: " + e.data);
+                };
+            } catch (e) {
+                trace("error: " + e.description);
+            }
+        }
+
+        function handlePeerMessage(data) {
+            var dataJson = JSON.parse(data);
+            if (dataJson == null) {
+                return;
+            }
+
+            var peer_id = parseInt(dataJson.from);
+            var str = "Message from '" + otherPeers[peer_id] + "': " + data;
+
+            if (dataJson["data-type"] == "peer-list") {
+                myId = parseInt(dataJson.data[0].id);
+                trace("My id: " + myId);
+                for (var i = 1; i < dataJson.data.length; i++) {
+                    trace("Peer " + i + ": id " + dataJson.data[i].id + ", name: " + dataJson.data[i].name);
+                    otherPeers[parseInt(dataJson.data[i].id)] = dataJson.data[i].name;
+                }
+
+                pingInterval = setInterval(() => {
+                    sendToPeer("ping", 1, null);
+                }, 10000);
+            }
+            else if (dataJson["data-type"] == "message") {
+                dataJson = dataJson.data;
+                if (dataJson != null && dataJson.type != null && dataJson.type == "offer") {
+                    trace(str);
+                    trace("Received SDP offer, preparing answer...");
+                    createPeerConnection(peer_id);
+                    pc.setRemoteDescription(new RTCSessionDescription(dataJson), onRemoteSdpSucces, onRemoteSdpError);
+                    pc.createAnswer(function (sessionDescription) {
+                        if (sessionDescription == null) {
+                            trace("Sending SDP answer (callback): undefined SDP");
+                        }
+                        else {
+                            pc.setLocalDescription(sessionDescription, onSetLocalSdpSuccess, onSetLocalSdpError);
+                            var data = JSON.stringify(sessionDescription);
+                            trace("Prepared SDP answer (callback): " + data);
+                            sendToPeer("message", peer_id, data);
+                        }
+                    }, function (error) { // error
+                        trace("Create answer error: " + error);
+                    }).then(function (sessionDescription) {
+                        if (sessionDescription == null) {
+                            trace("Sending SDP answer (then): undefined SDP");
+                        }
+                        else {
+                            pc.setLocalDescription(sessionDescription, onSetLocalSdpSuccess, onSetLocalSdpError);
+                            var data = JSON.stringify(sessionDescription);
+                            trace("Prepared SDP answer (then): " + data);
+                            sendToPeer("message", peer_id, data);
+                        }
+                    }).catch((error) => {
+                        trace("Create SDP answer error: " + error);
+                    });
+                }
+                else if (dataJson != null && dataJson.candidate != null) {
+                    trace(str);
+                    trace("Adding ICE candidate " + dataJson.candidate);
+                    var candidate = new RTCIceCandidate({ sdpMLineIndex: dataJson.sdpMLineIndex, candidate: dataJson.candidate });
+                    pc.addIceCandidate(candidate, onAddIceCandidateSuccess, onAddIceCandidateError);
+                }
+                else {
+                    trace(str);
+                    trace("Unsupported message!");
+                }
+            }
+            else {
+                trace(str);
+                trace("Unsupported message!");
+            }
+        }
+
+        function onRemoteSdpSucces() {
+            trace('onRemoteSdpSucces');
+        }
+
+        function onRemoteSdpError(event) {
+            trace("onRemoteSdpError: event.name: " + event.name + ", event.message: " + event.message);
+        }
+
+        function onSetLocalSdpSuccess() {
+            trace("setLocalDescription success");
+        }
+
+        function onSetLocalSdpError() {
+            trace("setLocalDescription failed");
+        }
+
+        function onAddIceCandidateSuccess() {
+            trace("addIceCandidate success");
+        }
+
+        function onAddIceCandidateError() {
+            trace("addIceCandidate failed");
+        }
+
+        function sendToPeer(dataType, peer_id, data) {
+            try {
+                var dataJson = '{"data-type":"' + dataType + '","from":' + myId + ',"to":' + peer_id;
+                if (data != null) {
+                    dataJson += ',"data":' + data;
+                }
+                dataJson += '}';
+                trace("Sending: " + dataJson);
+                websocket.send(dataJson);
+            } catch (e) {
+                trace("send to peer error: " + e.description);
+            }
+        }
+		
+        function createPeerConnection(peer_id) {
+            try {
+                pc = new RTCPeerConnection(pcConfig);
+                pc.onicecandidate = function (event) {
+                    if (event.candidate) {
+                        var candidate = {
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            sdpMid: event.candidate.sdpMid,
+                            candidate: event.candidate.candidate
+                        };
+                        sendToPeer("message", peer_id, JSON.stringify(candidate));
+                    } else {
+                        trace("End of candidates.");
+                    }
+                };
+                pc.onconnecting = function (message) {
+                    trace("Session connecting.");
+                };
+                pc.onopen = function (message) {
+                    trace("Session opened.");
+                };
+                pc.ontrack = onRemoteStreamAdded;
+                pc.onremovestream = function (event) {
+                    trace("Remote stream removed.");
+                };
+                pc.onidpvalidationerror = function (ev) {
+                    trace("onidpvalidationerror");
+                };
+                pc.onidpassertionerror = function (ev) {
+                    alert("onidpassertionerror");
+                };
+                pc.onnegotiationneeded = function () {
+                    trace("onnegotiationneeded");
+                };
+                pc.onconnectionstatechange = function (event) {
+                    trace("Connection state changed to " + pc.connectionState);
+                };
+                pc.oniceconnectionstatechange = function (event) {
+                    trace("ICE connection state changed to " + pc.iceConnectionState);
+                };
+                pc.onicegatheringstatechange = function () {
+                    trace("ICE gathering state changed to " + pc.iceGatheringState);
+                };
+                pc.onsignalingstatechange = function (event) {
+                    trace("Signaling state changed to " + pc.signalingState);
+                };
+                trace("Created RTCPeerConnection with config: " + JSON.stringify(pcConfig));
+            }
+            catch (e) {
+                trace("Failed to create PeerConnection, exception: " + e);
+            }
+        }
+
+        function onRemoteStreamAdded(event) {
+            trace("Got remote stream");
+            try {
+                var remoteVideoElement = document.getElementById('remote-video');
+                if (event.track.kind == 'video') {
+                    trace("Can play H.264: " + remoteVideoElement.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'));
+                }
+                remoteVideoElement.srcObject = event.streams[0];
+                trace("Remote stream added: " + event.track.kind + ", active: " + event.streams[0].active);
+            } catch (e) {
+                trace("Remote stream added exception: " + e);
+            }
+        }
+
+        function trace(txt) {
+            var elem = document.getElementById("debug");
+            elem.innerHTML += txt + "<br>";
+        }
+
+        window.onbeforeunload = disconnect;
+    </script>
+    <div id="container">
+        <div id="remote">
+            <video id="remote-video" width="640" height="480" autoplay playsinline></video>
+        </div>
+    </div>
+    Server: <input type="text" id="server" value="ws://127.0.0.1:8888/rtc" /><br>
+    Publishing path: <input type="text" id="local" value="builtin" />
+    <button id="connect" onclick="connect();">Connect</button>
+    <button disabled="true" id="disconnect" onclick="disconnect();">Disconnect</button>
+    <br>
+    <button onclick="document.getElementById('debug').innerHTML='';">Clear log</button>
+    <pre id="debug"></pre>
+    <br>
+    <hr>
+</body>
+</html>
