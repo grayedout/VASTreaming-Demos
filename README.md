@@ -1,5 +1,12 @@
 # VASTreaming Demos
 
+[![NuGet](https://img.shields.io/nuget/v/VAST.Demo.Core)](https://www.nuget.org/packages/VAST.Demo.Core)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/VAST.Demo.Core)](https://www.nuget.org/packages/VAST.Demo.Core)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com)
+[![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.5.2-blue)](https://dotnet.microsoft.com)
+[![.NET Standard](https://img.shields.io/badge/.NET_Standard-2.0-blue)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/badge/license-proprietary-red)](https://www.vastreaming.net)
+
 Sample applications demonstrating the [VASTreaming](https://www.vastreaming.net) media streaming SDK for .NET.
 
 These projects showcase RTSP, RTMP, HLS, DASH, SRT, NDI, WebRTC, and ONVIF capabilities across different .NET application types.
