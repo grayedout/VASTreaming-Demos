@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="VAST.Demo.ServerPage2"
+             xmlns:vast="clr-namespace:VAST.Controls;assembly=VAST.UI"
+             Title="Multi-proto Server"
+             NavigatedTo="ContentPage_NavigatedTo"
+             NavigatingFrom="ContentPage_NavigatingFrom"
+             Unloaded="ContentPage_Unloaded">
+
+    <ScrollView Orientation="Vertical" VerticalOptions="FillAndExpand" HorizontalOptions="Fill" Padding="10">
+        <VerticalStackLayout Spacing="10">
+
+            <!-- Input Section -->
+            <Label Text="Input:" FontSize="Medium" FontAttributes="Bold" TextColor="{StaticResource PurpleLight}" />
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="5">
+                <Label Text="Video Device" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="0" Grid.Column="0" />
+                <Picker x:Name="pickerVideoDevice" FontSize="Small" HorizontalOptions="FillAndExpand" Grid.Row="0" Grid.Column="1" SelectedIndexChanged="pickerVideoDevice_SelectedIndexChanged" />
+
+                <Label Text="Video Mode" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="1" Grid.Column="0" />
+                <Picker x:Name="pickerVideoCaptureMode" FontSize="Small" HorizontalOptions="FillAndExpand" IsEnabled="False" Grid.Row="1" Grid.Column="1" SelectedIndexChanged="pickerVideoCaptureMode_SelectedIndexChanged" />
+
+                <Label Text="Audio Device" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="2" Grid.Column="0" />
+                <Picker x:Name="pickerAudioDevice" FontSize="Small" HorizontalOptions="FillAndExpand" Grid.Row="2" Grid.Column="1" SelectedIndexChanged="pickerAudioDevice_SelectedIndexChanged" />
+
+                <Label Text="Audio Mode" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="3" Grid.Column="0" />
+                <Picker x:Name="pickerAudioCaptureMode" FontSize="Small" HorizontalOptions="FillAndExpand" IsEnabled="False" Grid.Row="3" Grid.Column="1" SelectedIndexChanged="pickerAudioCaptureMode_SelectedIndexChanged" />
+            </Grid>
+
+            <!-- Output Video Section -->
+            <Label Text="Output Video:" FontSize="Medium" FontAttributes="Bold" TextColor="{StaticResource PurpleLight}" Margin="0,10,0,0" />
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="5">
+                <Label Text="Width" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="0" Grid.Column="0" />
+                <Entry x:Name="tboxVideoWidth" FontSize="Small" Text="1280" Grid.Row="0" Grid.Column="1" />
+                <Label Text="Height" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="0" Grid.Column="2" />
+                <Entry x:Name="tboxVideoHeight" FontSize="Small" Text="720" Grid.Row="0" Grid.Column="3" />
+                <Label Text="Bitrate" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="1" Grid.Column="0" />
+                <Entry x:Name="tboxVideoBitrate" FontSize="Small" Text="2000000" Grid.Row="1" Grid.Column="1" />
+                <Label Text="Framerate" FontSize="Small" VerticalTextAlignment="Center" Grid.Row="1" Grid.Column="2" />
+                <Entry x:Name="tboxVideoFramerate" FontSize="Small" Text="30" Grid.Row="1" Grid.Column="3" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Label Text="Keyframe Interval" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="0" />
+                <Entry x:Name="tboxVideoKeyframeInterval" FontSize="Small" Text="30" Grid.Column="1" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="10">
+                <Label Text="Profile" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="0" />
+                <Picker x:Name="pickerVideoProfile" FontSize="Small" HorizontalOptions="FillAndExpand" SelectedIndex="0" Grid.Column="1">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>Auto</x:String>
+                            <x:String>Baseline</x:String>
+                            <x:String>Main</x:String>
+                            <x:String>High</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+                <Label Text="Level" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="2" />
+                <Picker x:Name="pickerVideoLevel" FontSize="Small" HorizontalOptions="FillAndExpand" SelectedIndex="0" Grid.Column="3">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>Auto</x:String>
+                            <x:String>1.0</x:String>
+                            <x:String>1.1</x:String>
+                            <x:String>1.2</x:String>
+                            <x:String>1.3</x:String>
+                            <x:String>2.0</x:String>
+                            <x:String>2.1</x:String>
+                            <x:String>2.2</x:String>
+                            <x:String>3.0</x:String>
+                            <x:String>3.1</x:String>
+                            <x:String>3.2</x:String>
+                            <x:String>4.0</x:String>
+                            <x:String>4.1</x:String>
+                            <x:String>4.2</x:String>
+                            <x:String>5.0</x:String>
+                            <x:String>5.1</x:String>
+                            <x:String>5.2</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+            </Grid>
+
+            <!-- Output Audio Section -->
+            <Label Text="Output Audio:" FontSize="Medium" FontAttributes="Bold" TextColor="{StaticResource PurpleLight}" Margin="0,10,0,0" />
+
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Label Text="Bitrate" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="0" />
+                <Entry x:Name="tboxAudioBitrate" FontSize="Small" Text="128000" Grid.Column="1" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="10">
+                <Label Text="Sample Rate" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="0" />
+                <Picker x:Name="pickerAudioSampleRate" FontSize="Small" HorizontalOptions="FillAndExpand" SelectedIndex="0" Grid.Column="1">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>48000</x:String>
+                            <x:String>44100</x:String>
+                            <x:String>22050</x:String>
+                            <x:String>11025</x:String>
+                            <x:String>8000</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+                <Label Text="Channels" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="2" />
+                <Picker x:Name="pickerAudioChannels" FontSize="Small" HorizontalOptions="FillAndExpand" SelectedIndex="0" Grid.Column="3">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:String}">
+                            <x:String>1</x:String>
+                            <x:String>2</x:String>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+            </Grid>
+
+            <!-- Encoding Framework -->
+            <Grid x:Name="layoutEncodingFramework" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,5,0,0">
+                <Label Text="Encoding" FontSize="Small" VerticalTextAlignment="Center" Grid.Column="0" />
+                <Picker x:Name="pickerEncodingFramework" FontSize="Small" HorizontalOptions="FillAndExpand" SelectedIndex="0" Grid.Column="1" />
+                <Label Text="H/W Accel." FontSize="Small" VerticalTextAlignment="Center" Grid.Column="2" />
+                <CheckBox x:Name="checkBoxHardwareAcceleration" IsChecked="True" VerticalOptions="Center" Grid.Column="3" />
+            </Grid>
+
+            <!-- Actions -->
+            <StackLayout Orientation="Horizontal" Spacing="5" Margin="0,10,0,0">
+                <Button x:Name="btnStart" Text="Start" WidthRequest="80" Clicked="btnStart_Clicked" />
+                <Button x:Name="btnStop" Text="Stop" WidthRequest="80" Clicked="btnStop_Clicked" />
+                <Button x:Name="btnEmailLog" Text="Send Log" WidthRequest="100" Clicked="btnSendLog_Clicked" />
+            </StackLayout>
+
+            <Editor x:Name="labelServerUri" Text="" FontSize="Medium" IsReadOnly="True" IsVisible="False" AutoSize="TextChanges" Margin="0,0,0,20" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

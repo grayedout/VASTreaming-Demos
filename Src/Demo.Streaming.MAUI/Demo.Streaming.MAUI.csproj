@@ -1,0 +1,822 @@
+﻿<Project>
+
+  <Import Project="..\Common\Common.MAUI.props" />
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- Microsoft.Maui.Controls reference must be in the beginning, otherwise .NET 10 compilation fails -->
+  <ItemGroup>
+    <PackageReference Include="System.IO.Packaging" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('net9.0'))">
+    <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.120" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.120" />
+    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="9.0.120" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('net10.0'))">
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="10.0.20" />
+    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="10.0.20" />
+  </ItemGroup>
+
+  <!-- Microsoft.Windows.Compatibility is necessary for PerformanceCounter to collect GPU stat on Windows and for image encoders -->
+  <ItemGroup Condition="$(TargetFramework.Contains('net8.0')) Or $(TargetFramework.Contains('net9.0'))">
+    <!-- v8.0 must be used for .NET 9 because System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders is broken in v9.0 -->
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework.Contains('net10.0'))">
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="10.0.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+
+    <TargetFrameworks Condition="$(VastMauiPlatforms.Contains('android')) == 'True'">$(VastNetCoreTargets)-android</TargetFrameworks>
+    <TargetFrameworks Condition="$(VastMauiPlatforms.Contains('ios')) == 'True'">$(TargetFrameworks);$(VastNetCoreTargets)-ios</TargetFrameworks>
+    <TargetFrameworks Condition="$(VastMauiPlatforms.Contains('maccatalyst')) == 'True'">$(TargetFrameworks);$(VastNetCoreTargets)-maccatalyst</TargetFrameworks>
+    <TargetFrameworks Condition="$(VastMauiPlatforms.Contains('windows')) == 'True' AND $([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);$(VastNetCoreTargets)-windows10.0.19041.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VAST.Demo</RootNamespace>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseMaui>true</UseMaui>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
+
+    <!-- Display name -->
+    <ApplicationTitle>VAST.Demo.Streaming</ApplicationTitle>
+    <AssemblyName>VAST.Demo.Streaming</AssemblyName>
+
+    <!-- App Identifier -->
+    <ApplicationId>com.vastreaming.demo.streaming</ApplicationId>
+    <ApplicationIdGuid>CCAC1E2C-F161-4577-8DC5-9667D6AB329A</ApplicationIdGuid>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>2024.5.6</ApplicationDisplayVersion>
+    <ApplicationVersion>7</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('ios')) == 'True' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">12.2</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('maccatalyst')) == 'True' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">12.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('android')) == 'True' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('windows')) == 'True' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$(TargetFramework.Contains('windows')) == 'True' AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <ProvisioningType>manual</ProvisioningType>
+    <CodesignKey>iPhone Developer</CodesignKey>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <ItemGroup>
+
+    <!-- App Icon -->
+    <MauiIcon Include="Resources\AppIcon\icon.svg" />
+
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Splash\splash.png" BaseSize="300,72" Color="#6036B2" />
+
+    <!-- Images -->
+    <MauiImage Include="Resources\Images\*" />
+
+    <!-- Custom Fonts -->
+    <MauiFont Include="Resources\Fonts\*" />
+
+    <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
+    <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <BundleResource Include="Platforms\iOS\PrivacyInfo.xcprivacy" LogicalName="PrivacyInfo.xcprivacy" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Platforms\Windows\Native\" />
+  </ItemGroup>
+
+  <Choose>
+
+    <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FFMPEG)) And ($(DefineConstants.Contains(VAST_LICENSE_SOURCE)) Or $(DefineConstants.Contains(VAST_LICENSE_ONLINE)) Or $(DefineConstants.Contains(VAST_LICENSE_FULL)))">
+
+      <ItemGroup>
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libavcodec.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libavdevice.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libavfilter.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libavformat.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libavutil.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libswresample.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libswscale.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libavcodec.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libavdevice.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libavfilter.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libavformat.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libavutil.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libswresample.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libswscale.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libavcodec.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libavdevice.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libavfilter.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libavformat.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libavutil.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libswresample.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libswscale.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libavcodec.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libavdevice.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libavfilter.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libavformat.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libavutil.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libswresample.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libswscale.so" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+        <NativeReference Include="Platforms\iOS\libavcodec.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libavdevice.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libavfilter.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libavformat.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libavutil.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libswresample.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+        <NativeReference Include="Platforms\iOS\libswscale.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>False</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <None Include="Platforms\Windows\Native\avcodec-60.dll" Link="avcodec-60.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\avdevice-60.dll" Link="avdevice-60.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\avfilter-9.dll" Link="avfilter-9.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\avformat-60.dll" Link="avformat-60.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\avutil-58.dll" Link="avutil-58.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\postproc-57.dll" Link="postproc-57.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\swresample-4.dll" Link="swresample-4.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Platforms\Windows\Native\swscale-7.dll" Link="swscale-7.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+
+    </When>
+    <Otherwise>
+
+      <ItemGroup>
+        <AndroidResource Remove="Platforms\iOS\libavcodec.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libavdevice.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libavfilter.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libavformat.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libavutil.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libswresample.framework\**" />
+        <AndroidResource Remove="Platforms\iOS\libswscale.framework\**" />
+        <Compile Remove="Platforms\iOS\libavcodec.framework\**" />
+        <Compile Remove="Platforms\iOS\libavdevice.framework\**" />
+        <Compile Remove="Platforms\iOS\libavfilter.framework\**" />
+        <Compile Remove="Platforms\iOS\libavformat.framework\**" />
+        <Compile Remove="Platforms\iOS\libavutil.framework\**" />
+        <Compile Remove="Platforms\iOS\libswresample.framework\**" />
+        <Compile Remove="Platforms\iOS\libswscale.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libavcodec.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libavdevice.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libavfilter.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libavformat.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libavutil.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libswresample.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\libswscale.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libavcodec.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libavdevice.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libavfilter.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libavformat.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libavutil.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libswresample.framework\**" />
+        <MauiCss Remove="Platforms\iOS\libswscale.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libavcodec.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libavdevice.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libavfilter.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libavformat.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libavutil.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libswresample.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\libswscale.framework\**" />
+        <None Remove="Platforms\iOS\libavcodec.framework\**" />
+        <None Remove="Platforms\iOS\libavdevice.framework\**" />
+        <None Remove="Platforms\iOS\libavfilter.framework\**" />
+        <None Remove="Platforms\iOS\libavformat.framework\**" />
+        <None Remove="Platforms\iOS\libavutil.framework\**" />
+        <None Remove="Platforms\iOS\libswresample.framework\**" />
+        <None Remove="Platforms\iOS\libswscale.framework\**" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <None Remove="Platforms\Android\lib\arm64-v8a\libavcodec.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libavdevice.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libavfilter.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libavformat.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libavutil.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libswresample.so" />
+        <None Remove="Platforms\Android\lib\arm64-v8a\libswscale.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libavcodec.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libavdevice.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libavfilter.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libavformat.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libavutil.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libswresample.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libswscale.so" />
+        <None Remove="Platforms\Android\lib\x86\libavcodec.so" />
+        <None Remove="Platforms\Android\lib\x86\libavdevice.so" />
+        <None Remove="Platforms\Android\lib\x86\libavfilter.so" />
+        <None Remove="Platforms\Android\lib\x86\libavformat.so" />
+        <None Remove="Platforms\Android\lib\x86\libavutil.so" />
+        <None Remove="Platforms\Android\lib\x86\libswresample.so" />
+        <None Remove="Platforms\Android\lib\x86\libswscale.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libavcodec.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libavdevice.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libavfilter.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libavformat.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libavutil.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libswresample.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libswscale.so" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <None Remove="Platforms\Windows\Native\avcodec-60.dll" />
+        <None Remove="Platforms\Windows\Native\avdevice-60.dll" />
+        <None Remove="Platforms\Windows\Native\avfilter-9.dll" />
+        <None Remove="Platforms\Windows\Native\avformat-60.dll" />
+        <None Remove="Platforms\Windows\Native\avutil-58.dll" />
+        <None Remove="Platforms\Windows\Native\postproc-57.dll" />
+        <None Remove="Platforms\Windows\Native\swresample-4.dll" />
+        <None Remove="Platforms\Windows\Native\swscale-7.dll" />
+      </ItemGroup>
+
+    </Otherwise>
+
+  </Choose>
+
+  <Choose>
+
+    <When Condition="$(DefineConstants.Contains(VAST_FEATURE_WEBRTC)) And ($(DefineConstants.Contains(VAST_LICENSE_SOURCE)) Or $(DefineConstants.Contains(VAST_LICENSE_ONLINE)) Or $(DefineConstants.Contains(VAST_LICENSE_FULL)))">
+
+      <ItemGroup>
+        <AndroidNativeLibrary Include="Platforms\Android\lib\arm64-v8a\libVAST.WebRTC.Native.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\armeabi-v7a\libVAST.WebRTC.Native.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86\libVAST.WebRTC.Native.so" />
+        <AndroidNativeLibrary Include="Platforms\Android\lib\x86_64\libVAST.WebRTC.Native.so" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+        <NativeReference Include="Platforms\iOS\VASTWebRTC.framework">
+          <Kind>Framework</Kind>
+          <Frameworks>
+          </Frameworks>
+          <LinkerFlags>
+          </LinkerFlags>
+          <WeakFrameworks>
+          </WeakFrameworks>
+          <ForceLoad>True</ForceLoad>
+          <NeedsGccExceptionHandling>False</NeedsGccExceptionHandling>
+          <IsCxx>False</IsCxx>
+          <SmartLink>False</SmartLink>
+        </NativeReference>
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <None Include="Platforms\Windows\Native\VAST.WebRTC.Native64.dll" Link="VAST.WebRTC.Native64.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+
+    </When>
+    <Otherwise>
+
+      <ItemGroup>
+        <AndroidResource Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+        <Compile Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+        <EmbeddedResource Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+        <MauiCss Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+        <MauiXaml Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+        <None Remove="Platforms\iOS\VASTWebRTC.framework\**" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <None Remove="Platforms\Android\lib\arm64-v8a\libVAST.WebRTC.Native.so" />
+        <None Remove="Platforms\Android\lib\armeabi-v7a\libVAST.WebRTC.Native.so" />
+        <None Remove="Platforms\Android\lib\x86\libVAST.WebRTC.Native.so" />
+        <None Remove="Platforms\Android\lib\x86_64\libVAST.WebRTC.Native.so" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <None Remove="Platforms\Windows\Native\VAST.WebRTC.Native64.dll" />
+      </ItemGroup>
+
+    </Otherwise>
+
+  </Choose>
+
+  <Choose>
+
+    <When Condition="$(DefineConstants.Contains(VAST_FEATURE_NDI)) And ($(DefineConstants.Contains(VAST_LICENSE_SOURCE)) Or $(DefineConstants.Contains(VAST_LICENSE_ONLINE)) Or $(DefineConstants.Contains(VAST_LICENSE_FULL)))">
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <None Include="Platforms\Windows\Native\Processing.NDI.Lib.x64.dll" Link="Processing.NDI.Lib.x64.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+
+    </When>
+    <Otherwise>
+
+      <ItemGroup>
+        <None Remove="Platforms\Windows\Native\Processing.NDI.Lib.x64.dll" />
+      </ItemGroup>
+
+    </Otherwise>
+
+  </Choose>
+
+  <Choose>
+    <When Condition="$(DefineConstants.Contains(VAST_LICENSE_SOURCE))">
+
+      <ItemGroup>
+        <ProjectReference Include="..\Common.NET\Common.NET.csproj" />
+        <ProjectReference Include="..\UI.MAUI\UI.MAUI.csproj" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <ProjectReference Include="..\Common.Ext.NET.Win32\Common.Ext.NET.Win32.csproj" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('ios')) == 'True'">
+        <ProjectReference Include="..\Common.Ext.NET.iOS\Common.Ext.NET.iOS.csproj" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('maccatalyst')) == 'True'">
+        <ProjectReference Include="..\Common.Ext.NET.MacCatalyst\Common.Ext.NET.MacCatalyst.csproj" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('android')) == 'True'">
+        <ProjectReference Include="..\Common.Ext.NET.Android\Common.Ext.NET.Android.csproj" />
+      </ItemGroup>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FFMPEG))">
+          <ItemGroup>
+            <ProjectReference Include="..\Codec.NET\Codec.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_MPEG_DASH))">
+          <ItemGroup>
+            <ProjectReference Include="..\DASH.NET\DASH.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_COMMON))">
+          <ItemGroup>
+            <ProjectReference Include="..\File.NET\File.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_ISO))">
+          <ItemGroup>
+            <ProjectReference Include="..\File.ISO.NET\File.ISO.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_HLS))">
+          <ItemGroup>
+            <ProjectReference Include="..\HLS.NET\HLS.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_IMAGE)) Or $(DefineConstants.Contains(VAST_FEATURE_JPEG)) Or $(DefineConstants.Contains(VAST_FEATURE_MIXING))">
+          <ItemGroup>
+            <ProjectReference Include="..\Image.NET\Image.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+          <ItemGroup>
+            <ProjectReference Include="..\Network.NET\Network.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_NDI))">
+          <ItemGroup>
+            <ProjectReference Include="..\NDI.NET\NDI.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_ONVIF))">
+          <ItemGroup>
+            <ProjectReference Include="..\ONVIF.NET\ONVIF.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTMP))">
+          <ItemGroup>
+            <ProjectReference Include="..\RTMP.NET\RTMP.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+          <ItemGroup>
+            <ProjectReference Include="..\RTSP.NET\RTSP.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_SRT))">
+          <ItemGroup>
+            <ProjectReference Include="..\SRT.NET\SRT.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_TS))">
+          <ItemGroup>
+            <ProjectReference Include="..\TS.NET\TS.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+          <ItemGroup>
+            <ProjectReference Include="..\WebRTC.NET\WebRTC.NET.csproj" />
+          </ItemGroup>
+        </When>
+      </Choose>
+
+    </When>
+    <When Condition="$(DefineConstants.Contains(VAST_LICENSE_ONLINE)) Or $(DefineConstants.Contains(VAST_LICENSE_FULL))">
+
+      <ItemGroup>
+        <Reference Include="VAST.Common">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <Reference Include="VAST.Common.Ext.Win32">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.Ext.Win32.dll</HintPath>
+        </Reference>
+        <Reference Include="VAST.UI">
+          <HintPath>..\..\Dependencies\AnyCPU\$(VastNetCoreTargets)-windows10.0.19041.0\VAST.UI.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('ios')) == 'True'">
+        <Reference Include="VAST.Common.Ext.iOS">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.Ext.iOS.dll</HintPath>
+        </Reference>
+        <Reference Include="VAST.UI">
+          <HintPath>..\..\Dependencies\AnyCPU\$(VastNetCoreTargets)-ios\VAST.UI.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('android')) == 'True'">
+        <Reference Include="VAST.Common.Ext.Android">
+          <HintPath>..\..\Dependencies\AnyCPU\VAST.Common.Ext.Android.dll</HintPath>
+        </Reference>
+        <Reference Include="VAST.UI">
+          <HintPath>..\..\Dependencies\AnyCPU\$(VastNetCoreTargets)-android\VAST.UI.dll</HintPath>
+        </Reference>
+      </ItemGroup>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FFMPEG))">
+          <ItemGroup>
+            <Reference Include="VAST.Codec">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Codec.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_MPEG_DASH))">
+          <ItemGroup>
+            <Reference Include="VAST.DASH">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.DASH.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_COMMON))">
+          <ItemGroup>
+            <Reference Include="VAST.File">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.File.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_FILE_ISO))">
+          <ItemGroup>
+            <Reference Include="VAST.File.ISO">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.File.ISO.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_HLS))">
+          <ItemGroup>
+            <Reference Include="VAST.HLS">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.HLS.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_IMAGE)) Or $(DefineConstants.Contains(VAST_FEATURE_JPEG)) Or $(DefineConstants.Contains(VAST_FEATURE_MIXING))">
+          <ItemGroup>
+            <Reference Include="VAST.Image">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Image.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+          <ItemGroup>
+            <Reference Include="VAST.Network">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.Network.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_NDI))">
+          <ItemGroup>
+            <Reference Include="VAST.NDI">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.NDI.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_ONVIF))">
+          <ItemGroup>
+            <Reference Include="VAST.ONVIF">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.ONVIF.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTMP))">
+          <ItemGroup>
+            <Reference Include="VAST.RTMP">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.RTMP.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+          <ItemGroup>
+            <Reference Include="VAST.RTSP">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.RTSP.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_SRT))">
+          <ItemGroup>
+            <Reference Include="VAST.SRT">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.SRT.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_TS))">
+          <ItemGroup>
+            <Reference Include="VAST.TS">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.TS.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+      <Choose>
+        <When Condition="$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+          <ItemGroup>
+            <Reference Include="VAST.WebRTC">
+              <HintPath>..\..\Dependencies\AnyCPU\VAST.WebRTC.dll</HintPath>
+            </Reference>
+          </ItemGroup>
+        </When>
+      </Choose>
+
+    </When>
+    <Otherwise>
+
+      <!-- VAST_LICENSE_DEMO -->
+
+      <ItemGroup>
+        <PackageReference Include="VAST.Demo.Core" Version="2026.2.20" />
+        <PackageReference Include="VAST.Demo.MAUI" Version="2026.2.20" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('windows')) == 'True'">
+        <PackageReference Include="VAST.Demo.Ext.Win32" Version="2026.2.20" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('ios')) == 'True'">
+        <PackageReference Include="VAST.Demo.Ext.iOS" Version="2026.2.20" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('maccatalyst')) == 'True'">
+        <PackageReference Include="VAST.Demo.Ext.Catalyst" Version="2026.2.20" />
+      </ItemGroup>
+
+      <ItemGroup Condition="$(TargetFramework.Contains('android')) == 'True'">
+        <PackageReference Include="VAST.Demo.Ext.Android" Version="2026.2.20" />
+      </ItemGroup>
+
+    </Otherwise>
+
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_MIXING))">
+      <ItemGroup>
+        <MauiXaml Remove="Pages\ExtendedCapturePage.xaml" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="Pages\ExtendedCapturePage.xaml.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_WEBRTC))">
+      <ItemGroup>
+        <MauiXaml Remove="Pages\WebRtcPlaybackPage.xaml" />
+        <MauiXaml Remove="Pages\WebRtcTwoWayPage.xaml" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="VastWebRtcSignalingPlaybackClient.cs" />
+        <Compile Remove="Pages\WebRtcPlaybackPage.xaml.cs" />
+        <Compile Remove="Pages\WebRtcTwoWayPage.xaml.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_RTSP))">
+      <ItemGroup>
+        <MauiXaml Remove="Pages\ServerPage1.xaml" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="Pages\ServerPage1.xaml.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="!$(DefineConstants.Contains(VAST_FEATURE_CORESERVER))">
+      <ItemGroup>
+        <MauiXaml Remove="Pages\ServerPage2.xaml" />
+      </ItemGroup>
+      <ItemGroup>
+        <Compile Remove="Pages\ServerPage2.xaml.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+</Project>

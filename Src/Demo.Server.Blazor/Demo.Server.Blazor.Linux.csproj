@@ -285,8 +285,8 @@
     <Otherwise>
       <!-- VAST_LICENSE_DEMO -->
       <ItemGroup>
-        <PackageReference Include="VAST.Demo.Core" Version="2026.2.15" />
-        <PackageReference Include="VAST.Demo.Ext.Linux" Version="2026.2.15" />
+        <PackageReference Include="VAST.Demo.Core" Version="2026.2.20" />
+        <PackageReference Include="VAST.Demo.Ext.Linux" Version="2026.2.20" />
       </ItemGroup>
     </Otherwise>
   </Choose>

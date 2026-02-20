@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="VAST.Demo.ExtendedCapturePage"
+             xmlns:vast="clr-namespace:VAST.Controls;assembly=VAST.UI"
+             Title="Extended Capture"
+             NavigatedTo="ContentPage_NavigatedTo"
+             NavigatingFrom="ContentPage_NavigatingFrom"
+             Unloaded="ContentPage_Unloaded">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10">
+
+        <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Center" JustifyContent="Start" Grid.Row="0" HorizontalOptions="Fill">
+            <Button x:Name="btnSettings" Text="Settings" WidthRequest="100" Margin="0,0,5,5" Clicked="btnSettings_Clicked" />
+            <Button x:Name="btnOverlays" Text="Overlays" WidthRequest="100" Margin="0,0,5,5" Clicked="btnOverlays_Clicked" />
+            <Button x:Name="btnStartPreview" Text="Start Preview" WidthRequest="120" Margin="0,0,5,5" Clicked="btnStartPreview_Clicked" />
+            <Button x:Name="btnStopPreview" Text="Stop Preview" WidthRequest="120" Margin="0,0,5,5" Clicked="btnStopPreview_Clicked" />
+            <Button x:Name="btnStartStreaming" Text="Start Streaming" WidthRequest="130" Margin="0,0,5,5" Clicked="btnStartStreaming_Clicked" />
+            <Button x:Name="btnStopStreaming" Text="Stop Streaming" WidthRequest="130" Margin="0,0,5,5" Clicked="btnStopStreaming_Clicked" />
+            <Button x:Name="btnEmailLog" Text="Send Log" WidthRequest="100" Margin="0,0,0,5" Clicked="btnSendLog_Clicked" />
+        </FlexLayout>
+
+        <StackLayout Orientation="Horizontal" Grid.Row="1" Margin="0,5,0,5">
+            <Label Text="Mic Level:" FontSize="Small" VerticalTextAlignment="Center" WidthRequest="90" />
+            <ProgressBar x:Name="pbAudioLevel" VerticalOptions="Center" HorizontalOptions="FillAndExpand" HeightRequest="35" Progress="0" />
+        </StackLayout>
+
+        <Grid Grid.Row="2">
+            <vast:VideoPreviewControl x:Name="videoPreview" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" PreviewType="Mixing" BackgroundColor="Black" />
+
+            <BoxView x:Name="panelDismissLayer" IsVisible="False" Color="Transparent" InputTransparent="False" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
+                <BoxView.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="dismissPanel_Tapped" />
+                </BoxView.GestureRecognizers>
+            </BoxView>
+
+            <ScrollView x:Name="overlayPanel" IsVisible="False" VerticalOptions="Start" HorizontalOptions="Start" MaximumWidthRequest="500" BackgroundColor="#CC222222" Padding="10">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Overlays / Sources:" FontSize="Small" FontAttributes="Bold" TextColor="White" />
+
+                    <StackLayout Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxCameraSource" IsChecked="True" VerticalOptions="Center" CheckedChanged="checkBoxCameraSource_CheckedChanged"/>
+                        <Label Text="Camera" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxOverlayTime" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxOverlayTime_CheckedChanged"/>
+                        <Label Text="Time overlay" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxOverlayLogo" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxOverlayLogo_CheckedChanged"/>
+                        <Label Text="Logo overlay" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxManualSource" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxManualSource_CheckedChanged"/>
+                        <Label Text="Manual source" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout x:Name="layoutVideoFileSource" Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxVideoFileSource" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxVideoFileSource_CheckedChanged"/>
+                        <Label Text="Video file" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout x:Name="layoutStreamingSource" Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxStreamingSource" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxStreamingSource_CheckedChanged"/>
+                        <Label Text="Stream:" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                        <Entry x:Name="tboxStreamingSource" FontSize="Small" WidthRequest="250" Text="" TextColor="White" />
+                    </StackLayout>
+
+                    <StackLayout x:Name="layoutScreenSource" Orientation="Horizontal">
+                        <CheckBox x:Name="checkBoxScreenSource" IsChecked="False" VerticalOptions="Center" CheckedChanged="checkBoxScreenSource_CheckedChanged"/>
+                        <Label Text="Screen:" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" />
+                        <Picker x:Name="pickerScreen" FontSize="Small" WidthRequest="200" VerticalOptions="Center" Margin="5,0,0,0" SelectedIndexChanged="pickerScreen_SelectedIndexChanged" />
+                        <Label Text="Behind" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Margin="5,0,0,0" />
+                        <CheckBox x:Name="checkBoxScreenSourceBehind" IsChecked="False" VerticalOptions="Center" />
+                    </StackLayout>
+
+                    <BoxView HeightRequest="1" Color="#55FFFFFF" Margin="0,5,0,5" />
+                    <Label Text="Effects:" FontSize="Small" FontAttributes="Bold" TextColor="White" />
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                        <Label Text="Brightness" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                        <Slider x:Name="sliderBrightness" Minimum="-10" Maximum="10" Grid.Column="1" ValueChanged="sliderBrightness_ValueChanged" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                        <Label Text="Contrast" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                        <Slider x:Name="sliderContrast" Minimum="-10" Maximum="10" Grid.Column="1" ValueChanged="sliderContrast_ValueChanged" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                        <Label Text="Chroma Key" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                        <Entry x:Name="tboxChromaKeyColor" FontSize="Small" Text="" Placeholder="#2D7557" TextColor="White" Grid.Column="1" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                        <Label Text="Threshold" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                        <Slider x:Name="sliderChromaKeyThreshold" Minimum="-10" Maximum="10" Grid.Column="1" ValueChanged="sliderChromaKeyThreshold_ValueChanged" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                        <Label Text="Smoothing" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                        <Slider x:Name="sliderChromaKeySmoothing" Minimum="-10" Maximum="10" Grid.Column="1" ValueChanged="sliderChromaKeySmoothing_ValueChanged" />
+                    </Grid>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

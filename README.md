@@ -5,6 +5,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com)
 [![.NET Framework](https://img.shields.io/badge/.NET_Framework-4.5.2-blue)](https://dotnet.microsoft.com)
 [![.NET Standard](https://img.shields.io/badge/.NET_Standard-2.0-blue)](https://dotnet.microsoft.com)
+[![MAUI](https://img.shields.io/badge/.NET_MAUI-10.0-blue)](https://dotnet.microsoft.com/apps/maui)
 [![License](https://img.shields.io/badge/license-proprietary-red)](https://www.vastreaming.net)
 
 Sample applications demonstrating the [VASTreaming](https://www.vastreaming.net) media streaming SDK for .NET.
@@ -21,6 +22,7 @@ These projects showcase RTSP, RTMP, HLS, DASH, SRT, NDI, WebRTC, and ONVIF capab
 | **Demo.Server.NET4** | Console-based streaming server (.NET Framework 4.7.2, Windows) |
 | **Demo.Server.ASPNETCore** | ASP.NET Core streaming server with web API (.NET 10.0, Windows, Linux) |
 | **Demo.Server.Blazor** | Blazor Server streaming application (.NET 10.0, Windows, Linux) |
+| **Demo.Streaming.MAUI** | .NET MAUI streaming client with capture, playback, and WebRTC (.NET 10.0, Windows, Android, iOS, Mac Catalyst) |
 
 WebRTC HTML test pages are included in the root folder for browser-based WebRTC testing.
 
@@ -45,11 +47,16 @@ For detailed setup instructions and API reference, see the [demo documentation](
 | **VAST.Demo.Core** | Core managed libraries (required) |
 | **VAST.Demo.Ext.Win32** | Windows platform extensions and native dependencies |
 | **VAST.Demo.Ext.Linux** | Linux platform extensions and native dependencies |
+| **VAST.Demo.Ext.Android** | Android platform extensions |
+| **VAST.Demo.Ext.iOS** | iOS platform extensions |
+| **VAST.Demo.Ext.Catalyst** | Mac Catalyst platform extensions |
+| **VAST.Demo.MAUI** | MAUI integration helpers and build targets |
 
 ## Requirements
 
 - .NET 10.0 or .NET Framework 4.7.2+
-- Windows x64 or Linux x64
+- Server demos: Windows x64 or Linux x64
+- MAUI demo: Windows x64, Android, iOS, or Mac Catalyst
 
 ## License
 

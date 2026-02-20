@@ -803,6 +803,8 @@ namespace VAST.Demo
             SKFont font = null;
             SKPaint paintFont = null;
             SKPaint paintFill = null;
+            int width = 1920;
+            int height = 1080;
 
             try
             {
@@ -815,14 +817,14 @@ namespace VAST.Demo
                     }
                 }
 
-                bmpImage = new SKBitmap(1280, 720, SKColorType.Bgra8888, SKAlphaType.Premul);
+                bmpImage = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
                 canvas = new SKCanvas(bmpImage);
                 tf = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
                 font = new SKFont { Size = 48, Typeface = tf };
                 paintFont = new SKPaint { Color = SKColors.Purple, Style = SKPaintStyle.Fill };
                 paintFill = new SKPaint { Color = SKColors.White, Style = SKPaintStyle.Fill };
 
-                canvas.DrawBitmap(bmpBackground, new SKRect(0, 0, 1280, 720));
+                canvas.DrawBitmap(bmpBackground, new SKRect(0, 0, width, height));
 
                 // prepare video encoder
                 VAST.Common.MediaType uncompressedVideoMediaType = new VAST.Common.MediaType
@@ -830,8 +832,8 @@ namespace VAST.Demo
                     ContentType = VAST.Common.ContentType.Video,
                     CodecId = VAST.Common.Codec.Uncompressed,
                     PixelFormat = VAST.Common.PixelFormat.BGRA,
-                    Width = 1280,
-                    Height = 720,
+                    Width = width,
+                    Height = height,
                     Framerate = new VAST.Common.Rational(30),
                 };
 
@@ -839,9 +841,9 @@ namespace VAST.Demo
                 {
                     ContentType = VAST.Common.ContentType.Video,
                     CodecId = VAST.Common.Codec.H264,
-                    Bitrate = 4000000,
-                    Width = 1280,
-                    Height = 720,
+                    Bitrate = width * height * 2,
+                    Width = width,
+                    Height = height,
                     Framerate = new VAST.Common.Rational(30),
                 };
 

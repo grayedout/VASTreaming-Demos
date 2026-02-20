@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="VAST.Demo.AppShell"
+    x:Name="shell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:VAST.Demo"
+    Shell.FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="{StaticResource PurpleDark}"
+    Shell.FlyoutItemIsVisible="True"
+    Shell.NavBarIsVisible="False">
+
+    <Shell.ItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*" Padding="15,10">
+                <Label Text="{Binding Title}" TextColor="White" FontSize="16" Grid.Column="1" VerticalTextAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+    <!-- Capture -->
+    <FlyoutItem Title="Simple Capture">
+        <ShellContent ContentTemplate="{DataTemplate local:SimpleCapturePage}" />
+    </FlyoutItem>
+
+    <!-- Playback -->
+    <FlyoutItem Title="Simple Playback">
+        <ShellContent ContentTemplate="{DataTemplate local:SimplePlaybackPage}" />
+    </FlyoutItem>
+    <FlyoutItem Title="Extended Playback">
+        <ShellContent ContentTemplate="{DataTemplate local:ExtendedPlaybackPage}" />
+    </FlyoutItem>
+
+    <!-- Server pages added in code-behind based on feature flags -->
+
+</Shell>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="VAST.Demo.SimplePlaybackPage"
+             xmlns:vast="clr-namespace:VAST.Controls;assembly=VAST.UI"
+             Title="Simple Playback"
+             NavigatingFrom="ContentPage_NavigatingFrom">
+
+    <Grid>
+        <vast:MediaPlayerControl x:Name="player" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" BackgroundColor="Black" />
+
+        <Button x:Name="btnControls" Text="Controls" VerticalOptions="Start" HorizontalOptions="Start" WidthRequest="100" Margin="10,10,0,0" Clicked="btnControls_Clicked" />
+        <Button x:Name="btnEmailLog" Text="Send Log" VerticalOptions="Start" HorizontalOptions="End" WidthRequest="100" Margin="0,10,10,0" Clicked="btnSendLog_Clicked" />
+
+        <BoxView x:Name="panelDismissLayer" IsVisible="False" Color="Transparent" InputTransparent="False" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="dismissPanel_Tapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <ScrollView x:Name="controlsPanel" IsVisible="False" VerticalOptions="Start" HorizontalOptions="Start" MaximumWidthRequest="500" BackgroundColor="#CC222222" Padding="10" Margin="0,50,0,0">
+            <VerticalStackLayout Spacing="5">
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="URI" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Entry x:Name="tboxUri" FontSize="Small" Text="" TextColor="White" Grid.Column="1" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Video" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Picker x:Name="pickerVideoTrack" FontSize="Small" HorizontalOptions="FillAndExpand" IsEnabled="False" Grid.Column="1" SelectedIndexChanged="pickerVideoTrack_SelectedIndexChanged" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Audio" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Picker x:Name="pickerAudioTrack" FontSize="Small" HorizontalOptions="FillAndExpand" IsEnabled="False" Grid.Column="1" SelectedIndexChanged="pickerAudioTrack_SelectedIndexChanged" />
+                </Grid>
+
+                <StackLayout Orientation="Horizontal" Spacing="5">
+                    <Button x:Name="btnStart" Text="Play" WidthRequest="80" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnPlay_Clicked" />
+                    <Button x:Name="btnStop" Text="Stop" WidthRequest="80" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnStop_Clicked" />
+                </StackLayout>
+
+                <StackLayout Orientation="Horizontal" Spacing="5">
+                    <Button x:Name="btnPause" IsEnabled="False" Text="Pause" WidthRequest="80" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnPause_Click" />
+                    <Button x:Name="btnRewind" Text="&lt;&lt;&lt;" IsEnabled="False" WidthRequest="60" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnRewind_Clicked" />
+                    <Button x:Name="btnFastForward" Text="&gt;&gt;&gt;" IsEnabled="False" WidthRequest="60" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnFastForward_Clicked" />
+                </StackLayout>
+
+                <Slider x:Name="sliderPosition" IsEnabled="False" DragStarted="sliderPosition_DragStarted" DragCompleted="sliderPosition_DragCompleted" ValueChanged="sliderPosition_ValueChanged" />
+
+                <Label x:Name="labelPosition" Text="0:00:00.000" FontSize="Small" TextColor="White" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

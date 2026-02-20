@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11312.151 d18.0
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Demo.Server.ASPNETCore.Linux", "Src\Demo.Server.ASPNETCore\Demo.Server.ASPNETCore.Linux.csproj", "{BEF044BF-42B1-4D6D-AE70-72B3360463B0}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Demo.Server.NET.Win32", "Src\Demo.Server.NET\Demo.Server.NET.Win32.csproj", "{E30BF4C3-5DC8-441C-ABE9-985BE1BA45BA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo.Server.NET4", "Src\Demo.Server.NET4\Demo.Server.NET4.csproj", "{8EBAA770-17CB-4C08-9EED-4260AEA64F72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo.Streaming.MAUI", "Src\Demo.Streaming.MAUI\Demo.Streaming.MAUI.csproj", "{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,6 +59,12 @@ Global
 		{8EBAA770-17CB-4C08-9EED-4260AEA64F72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EBAA770-17CB-4C08-9EED-4260AEA64F72}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EBAA770-17CB-4C08-9EED-4260AEA64F72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{291E143F-2E9D-B228-76D7-17B5F2B3EE4E}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="VAST.Demo.WebRtcTwoWayPage"
+             xmlns:vast="clr-namespace:VAST.Controls;assembly=VAST.UI"
+             Title="WebRTC 2-Way"
+             NavigatedTo="ContentPage_NavigatedTo"
+             NavigatingFrom="ContentPage_NavigatingFrom"
+             SizeChanged="ContentPage_SizeChanged">
+
+    <Grid x:Name="gridPreview" BackgroundColor="Black">
+        <vast:VideoPreviewControl x:Name="localPreview" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" />
+        <vast:MediaPlayerControl x:Name="remotePreview" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" />
+
+        <Button x:Name="btnControls" Text="Controls" VerticalOptions="Start" HorizontalOptions="Start" WidthRequest="100" Margin="10,10,0,0" Clicked="btnControls_Clicked" />
+        <Button x:Name="btnEmailLog" Text="Send Log" VerticalOptions="Start" HorizontalOptions="End" WidthRequest="100" Margin="0,10,10,0" Clicked="btnSendLog_Clicked" />
+
+        <BoxView x:Name="panelDismissLayer" IsVisible="False" Color="Transparent" InputTransparent="False" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="dismissPanel_Tapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <ScrollView x:Name="controlsPanel" IsVisible="False" VerticalOptions="Start" HorizontalOptions="Start" MaximumWidthRequest="500" BackgroundColor="#CC222222" Padding="10" Margin="0,50,0,0">
+            <VerticalStackLayout Spacing="5">
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Video" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Picker x:Name="pickerVideoDevice" FontSize="Small" HorizontalOptions="FillAndExpand" Grid.Column="1" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Audio" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Picker x:Name="pickerAudioDevice" FontSize="Small" HorizontalOptions="FillAndExpand" Grid.Column="1" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Server" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Entry x:Name="textUri" FontSize="Small" Text="ws://test.vastreaming.net:8888/rtc" TextColor="White" Grid.Column="1" />
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                    <Label Text="Room" FontSize="Small" VerticalTextAlignment="Center" TextColor="White" Grid.Column="0" />
+                    <Entry x:Name="textRoom" FontSize="Small" Text="conference" TextColor="White" Grid.Column="1" />
+                </Grid>
+
+                <StackLayout Orientation="Horizontal" Spacing="5">
+                    <Button x:Name="btnStart" Text="Play" WidthRequest="80" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnPlay_Clicked" />
+                    <Button x:Name="btnStop" Text="Stop" WidthRequest="80" HeightRequest="{Binding Source={x:Reference btnControls}, Path=Height}" Clicked="btnStop_Clicked" />
+                </StackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

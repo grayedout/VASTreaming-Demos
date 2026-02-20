@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="VAST.Demo.SimpleCapturePage"
+             xmlns:vast="clr-namespace:VAST.Controls;assembly=VAST.UI"
+             Title="Simple Capture"
+             NavigatedTo="ContentPage_NavigatedTo"
+             NavigatingFrom="ContentPage_NavigatingFrom"
+             Unloaded="ContentPage_Unloaded">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10">
+
+        <FlexLayout Wrap="Wrap" Direction="Row" AlignItems="Center" JustifyContent="Start" Grid.Row="0" HorizontalOptions="Fill">
+            <Button x:Name="btnSettings" Text="Settings" WidthRequest="100" Margin="0,0,5,5" Clicked="btnSettings_Clicked" />
+            <Button x:Name="btnStartPreview" Text="Start Preview" WidthRequest="120" Margin="0,0,5,5" Clicked="btnStartPreview_Clicked" />
+            <Button x:Name="btnStopPreview" Text="Stop Preview" WidthRequest="120" Margin="0,0,5,5" Clicked="btnStopPreview_Clicked" />
+            <Button x:Name="btnStartStreaming" Text="Start Streaming" WidthRequest="130" Margin="0,0,5,5" Clicked="btnStartStreaming_Clicked" />
+            <Button x:Name="btnStopStreaming" Text="Stop Streaming" WidthRequest="130" Margin="0,0,5,5" Clicked="btnStopStreaming_Clicked" />
+            <Button x:Name="btnEmailLog" Text="Send Log" WidthRequest="100" Margin="0,0,0,5" Clicked="btnSendLog_Clicked" />
+        </FlexLayout>
+
+        <StackLayout Orientation="Horizontal" Grid.Row="1" Margin="0,5,0,5">
+            <Label Text="Mic Level:" FontSize="Small" VerticalTextAlignment="Center" WidthRequest="90" />
+            <ProgressBar x:Name="pbAudioLevel" VerticalOptions="Center" HorizontalOptions="FillAndExpand" HeightRequest="35" Progress="0" />
+        </StackLayout>
+
+        <vast:VideoPreviewControl x:Name="videoPreview" Grid.Row="2" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand" PreviewType="Capture" BackgroundColor="Black" />
+
+    </Grid>
+
+</ContentPage>
